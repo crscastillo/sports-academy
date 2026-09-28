@@ -15,6 +15,13 @@ create table public.academies (
   created_at timestamptz not null default now()
 );
 
+create table public.staff (
+  email text primary key,
+  academy_id uuid not null references public.academies(id) on delete cascade,
+  full_name text,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.current_academy_id()
 returns uuid
 language sql stable security definer set search_path = public
@@ -31,12 +38,7 @@ as $$
   select public.current_academy_id() is not null;
 $$;
 
-create table public.staff (
-  email text primary key,
-  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
-  full_name text,
-  created_at timestamptz not null default now()
-);
+alter table public.staff alter column academy_id set default public.current_academy_id();
 
 -- Creates a new academy and makes the calling (already-authenticated) user
 -- its first staff member. Runs as security definer so it can bootstrap the
