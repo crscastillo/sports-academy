@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function safeNext(raw: FormDataEntryValue | null) {
-  const n = String(raw ?? "/");
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/";
+  const n = String(raw ?? "/dashboard");
+  return n.startsWith("/") && !n.startsWith("//") ? n : "/dashboard";
 }
 
 export async function registerWithPassword(formData: FormData) {

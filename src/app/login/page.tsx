@@ -8,7 +8,7 @@ export const metadata = { title: "Ingresar" };
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : null;
-  const next = typeof sp.next === "string" ? sp.next : "/";
+  const next = typeof sp.next === "string" ? sp.next : "/dashboard";
   const isRegister = sp.mode === "register";
   return (
     <main className="flex min-h-screen items-center justify-center p-4">

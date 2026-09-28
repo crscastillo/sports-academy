@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const LINKS = [
-  { href: "/", label: "Inicio" },
+  { href: "/dashboard", label: "Inicio" },
   { href: "/teams", label: "Equipos" },
   { href: "/players", label: "Atletas" },
   { href: "/trainings", label: "Entrenamientos" },
@@ -17,11 +17,11 @@ const LINKS = [
 export function Nav({ email }: { email: string }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
-  const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
+  const active = (h: string) => path === h || path.startsWith(h + "/");
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-bold">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand">🏀</span>
           <span className="hidden sm:inline">Sports Academy</span>
         </Link>
