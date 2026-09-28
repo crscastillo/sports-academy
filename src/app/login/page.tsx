@@ -1,4 +1,5 @@
-import { sendMagicLink, signInWithPassword } from "./actions";
+import Link from "next/link";
+import { registerWithPassword, signInWithPassword } from "./actions";
 import { Field, Input } from "@/components/ui";
 import { SubmitButton } from "@/components/client";
 
@@ -7,8 +8,8 @@ export const metadata = { title: "Ingresar" };
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : null;
-  const sent = typeof sp.sent === "string" ? sp.sent : null;
   const next = typeof sp.next === "string" ? sp.next : "/";
+  const isRegister = sp.mode === "register";
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
@@ -18,31 +19,41 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <p className="text-sm text-muted">Acceso para entrenadores y administradores</p>
         </div>
 
-        {sent ? (
-          <p className="rounded-lg bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
-            Te enviamos un enlace a <strong>{sent}</strong>. Abrilo desde este mismo navegador para ingresar.
-          </p>
-        ) : (
-          <form action={sendMagicLink} className="space-y-3">
-            <input type="hidden" name="next" value={next} />
-            <Field label="Correo">
-              <Input type="email" name="email" required autoComplete="email" />
-            </Field>
-            <SubmitButton className="w-full">Enviarme enlace de acceso</SubmitButton>
-          </form>
-        )}
-
         {error && <p className="rounded-lg bg-red-50 p-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
 
-        <details className="text-sm">
-          <summary className="cursor-pointer text-center text-muted">Ingresar con contraseña</summary>
-          <form action={signInWithPassword} className="mt-3 space-y-3">
+        {isRegister ? (
+          <form action={registerWithPassword} className="space-y-3">
+            <input type="hidden" name="next" value={next} />
+            <Field label="Correo"><Input type="email" name="email" required autoComplete="email" /></Field>
+            <Field label="Contraseña"><Input type="password" name="password" required autoComplete="new-password" minLength={8} /></Field>
+            <SubmitButton className="w-full">Crear cuenta</SubmitButton>
+          </form>
+        ) : (
+          <form action={signInWithPassword} className="space-y-3">
             <input type="hidden" name="next" value={next} />
             <Field label="Correo"><Input type="email" name="email" required autoComplete="email" /></Field>
             <Field label="Contraseña"><Input type="password" name="password" required autoComplete="current-password" /></Field>
-            <SubmitButton variant="secondary" className="w-full">Ingresar</SubmitButton>
+            <SubmitButton className="w-full">Ingresar</SubmitButton>
           </form>
-        </details>
+        )}
+
+        <p className="text-center text-sm text-muted">
+          {isRegister ? (
+            <>
+              ¿Ya tenés cuenta?{" "}
+              <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-brand underline">
+                Ingresá
+              </Link>
+            </>
+          ) : (
+            <>
+              ¿No tenés cuenta?{" "}
+              <Link href={`/login?mode=register&next=${encodeURIComponent(next)}`} className="text-brand underline">
+                Registrate
+              </Link>
+            </>
+          )}
+        </p>
       </div>
     </main>
   );

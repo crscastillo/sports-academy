@@ -52,7 +52,7 @@ export default async function StaffPage() {
             <Field label="Correo"><Input type="email" name="email" required /></Field>
             <Field label="Nombre"><Input name="full_name" /></Field>
             <SubmitButton>Dar acceso</SubmitButton>
-            <p className="text-xs text-muted">La persona ingresa con un enlace que recibe en ese correo.</p>
+            <p className="text-xs text-muted">La persona se registra con ese correo y una contraseña en la página de ingreso.</p>
           </form>
         </Card>
       </div>
