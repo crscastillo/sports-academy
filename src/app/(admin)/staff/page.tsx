@@ -1,10 +1,20 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, Input, PageHeader } from "@/components/ui";
-import { SubmitButton } from "@/components/client";
-import { str } from "@/lib/form";
+import { AutoSubmitForm, ShareLink, SubmitButton } from "@/components/client";
+import { bool, str } from "@/lib/form";
 
 export const metadata = { title: "Personal" };
+
+async function setAcademyPublic(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const { data: academy } = await supabase.from("academies").select("id").single();
+  if (!academy) return;
+  const { error } = await supabase.from("academies").update({ is_public: bool(fd, "is_public") }).eq("id", academy.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/staff");
+}
 
 async function addStaff(fd: FormData) {
   "use server";
@@ -27,10 +37,29 @@ async function removeStaff(email: string) {
 
 export default async function StaffPage() {
   const supabase = await createClient();
-  const { data: staff } = await supabase.from("staff").select("email, full_name, created_at").order("created_at");
+  const [{ data: staff }, { data: academy }] = await Promise.all([
+    supabase.from("staff").select("email, full_name, created_at").order("created_at"),
+    supabase.from("academies").select("slug, is_public").single(),
+  ]);
   return (
     <>
       <PageHeader title="Personal" subtitle="Entrenadores y administradores con acceso a la app" />
+
+      {academy && (
+        <Card title="Página pública de la academia" className="mb-6">
+          <p className="mb-3 text-sm text-muted">
+            Una página de solo lectura con las jornadas próximas y los resultados anteriores. No muestra atletas ni datos de contacto.
+          </p>
+          <AutoSubmitForm action={setAcademyPublic} className="mb-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="is_public" defaultChecked={academy.is_public} className="accent-[var(--brand)]" />
+              Página pública activa
+            </label>
+          </AutoSubmitForm>
+          {academy.is_public && <ShareLink path={`/a/${academy.slug}`} label="Copiar link" />}
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title="Con acceso" className="lg:col-span-2">
           <ul className="divide-y divide-line">
