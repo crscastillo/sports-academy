@@ -16,7 +16,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <div className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-2xl">🏀</div>
           <h1 className="text-xl font-bold">Sports Academy</h1>
-          <p className="text-sm text-muted">Acceso para entrenadores y administradores</p>
+          <p className="text-sm text-muted">
+            {isRegister ? "Creá tu academia" : "Acceso para entrenadores y administradores"}
+          </p>
         </div>
 
         {error && <p className="rounded-lg bg-red-50 p-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
@@ -24,9 +26,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         {isRegister ? (
           <form action={registerWithPassword} className="space-y-3">
             <input type="hidden" name="next" value={next} />
+            <Field label="Nombre de la academia"><Input name="academy_name" required autoComplete="organization" /></Field>
+            <Field label="Tu nombre"><Input name="full_name" autoComplete="name" /></Field>
             <Field label="Correo"><Input type="email" name="email" required autoComplete="email" /></Field>
             <Field label="Contraseña"><Input type="password" name="password" required autoComplete="new-password" minLength={8} /></Field>
-            <SubmitButton className="w-full">Crear cuenta</SubmitButton>
+            <SubmitButton className="w-full">Crear academia</SubmitButton>
           </form>
         ) : (
           <form action={signInWithPassword} className="space-y-3">

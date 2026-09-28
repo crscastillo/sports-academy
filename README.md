@@ -11,18 +11,20 @@ Basketball academy management app — Next.js 16 (App Router) + Supabase. UI in 
 - **Guest call-up link** (`/c/<token>`) — parents confirm or decline and choose **bus** or **own transport**. No account needed.
 - **Bus planning** — bus trips per matchday with capacity; live passenger list from confirmations.
 - **Donation lists** (`/d/<token>`) — for home matchdays; admin creates items (snack bar / sales), parents sign up with what they bring.
-- **Staff** — email allow-list; staff sign in with a magic link.
+- **Staff** — email allow-list per academy; staff register or sign in with email + password.
+- **Multi-tenant** — registering creates a new academy (tenant) and makes you its first staff member; every table is scoped to your academy.
 
 ## Architecture
 
-- Staff-only tables are protected by RLS (`public.is_staff()` checks the JWT email against `public.staff`).
+- Multi-tenant: every business table carries `academy_id`. RLS (`public.current_academy_id()` / `public.is_staff()`) scopes every read/write to the caller's own academy.
+- `public.create_academy(name, full_name)` is a `SECURITY DEFINER` RPC that creates a new academy and makes the calling (already-authenticated) user its first staff row — this is what the registration form calls.
 - Guests never read tables directly; share links call `SECURITY DEFINER` functions scoped by an unguessable token (`guest_get_callups`, `guest_respond_callup`, `guest_get_donation_list`, `guest_pledge_donation`). Guests only see player name and jersey number.
 - Schema: [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
 
 ## Setup
 
 1. Create a Supabase project and run the migration (SQL editor or `supabase db push`).
-2. Edit the last statement of the migration (or insert into `public.staff`) to register the first admin email.
+2. Supabase → Authentication → Providers → Email: disable "Confirm email" so registration doesn't require a confirmation email (the app relies on the session being returned immediately from sign-up).
 3. Supabase → Authentication → URL Configuration: set **Site URL** to your deployment URL and add `https://<your-domain>/auth/callback` to **Redirect URLs**.
 4. Env vars (`.env.local` / Vercel):
 
@@ -31,4 +33,4 @@ Basketball academy management app — Next.js 16 (App Router) + Supabase. UI in 
    NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon or publishable key>
    ```
 
-5. `npm install && npm run dev`
+5. `npm install && npm run dev`, then go to `/login?mode=register` to create the first academy.

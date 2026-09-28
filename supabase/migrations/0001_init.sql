@@ -1,27 +1,73 @@
 -- Sports Academy: initial schema
+-- Multi-tenant: every academy is isolated. Registering creates an academy and
+-- makes the registering user its first staff member (see create_academy()).
 -- Staff (admins) sign in with Supabase Auth. Guests (parents) use share links
 -- that call SECURITY DEFINER functions, so they never read tables directly.
 
 create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------------------
--- Staff
+-- Academies (tenants) & staff
 -- ---------------------------------------------------------------------------
-create table public.staff (
-  email text primary key,
-  full_name text,
+create table public.academies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
   created_at timestamptz not null default now()
 );
+
+create or replace function public.current_academy_id()
+returns uuid
+language sql stable security definer set search_path = public
+as $$
+  select academy_id from public.staff
+  where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  limit 1;
+$$;
 
 create or replace function public.is_staff()
 returns boolean
 language sql stable security definer set search_path = public
 as $$
-  select exists (
-    select 1 from public.staff
-    where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-  );
+  select public.current_academy_id() is not null;
 $$;
+
+create table public.staff (
+  email text primary key,
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
+  full_name text,
+  created_at timestamptz not null default now()
+);
+
+-- Creates a new academy and makes the calling (already-authenticated) user
+-- its first staff member. Runs as security definer so it can bootstrap the
+-- very first staff row, before current_academy_id() has anything to find.
+create or replace function public.create_academy(p_academy_name text, p_full_name text default null)
+returns uuid
+language plpgsql volatile security definer set search_path = public
+as $$
+declare
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_academy_id uuid;
+begin
+  if v_email = '' then
+    raise exception 'not authenticated';
+  end if;
+  if exists (select 1 from public.staff where lower(email) = v_email) then
+    raise exception 'this account already belongs to an academy';
+  end if;
+  if coalesce(trim(p_academy_name), '') = '' then
+    raise exception 'academy name required';
+  end if;
+
+  insert into public.academies (name) values (trim(p_academy_name)) returning id into v_academy_id;
+  insert into public.staff (email, full_name, academy_id) values (v_email, nullif(trim(coalesce(p_full_name, '')), ''), v_academy_id);
+
+  return v_academy_id;
+end;
+$$;
+
+revoke all on function public.create_academy(text, text) from public;
+grant execute on function public.create_academy(text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Teams & players
@@ -30,6 +76,7 @@ create type public.team_gender as enum ('male', 'female', 'mixed');
 
 create table public.teams (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   name text not null,
   category text not null,               -- e.g. U13, U15, Mayor
   gender public.team_gender not null default 'mixed',
@@ -40,10 +87,11 @@ create table public.teams (
 
 create table public.players (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   first_name text not null,
   last_name text not null,
   jersey_number int,
-  national_id text unique,              -- cédula
+  national_id text,                     -- cédula
   birth_date date,
   gender public.team_gender,
   profile text,                         -- notes / player profile
@@ -54,12 +102,14 @@ create table public.players (
   guardian_name text,
   guardian_phone text,
   active boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (academy_id, national_id)
 );
 
 create table public.team_players (
   team_id uuid not null references public.teams(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   created_at timestamptz not null default now(),
   primary key (team_id, player_id)
 );
@@ -71,6 +121,7 @@ create type public.training_status as enum ('planned', 'completed', 'cancelled')
 
 create table public.trainings (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   date date not null,
   start_time time,
   end_time time,
@@ -85,6 +136,7 @@ create table public.trainings (
 create table public.training_teams (
   training_id uuid not null references public.trainings(id) on delete cascade,
   team_id uuid not null references public.teams(id) on delete cascade,
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   primary key (training_id, team_id)
 );
 
@@ -93,6 +145,7 @@ create table public.training_teams (
 -- ---------------------------------------------------------------------------
 create table public.matchdays (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   title text,
   date date not null,
   venue text not null,
@@ -105,6 +158,7 @@ create table public.matchdays (
 
 create table public.matches (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   matchday_id uuid not null references public.matchdays(id) on delete cascade,
   team_id uuid not null references public.teams(id) on delete restrict,
   opponent text not null,
@@ -121,6 +175,7 @@ create type public.transport_mode as enum ('bus', 'own');
 
 create table public.callups (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   match_id uuid not null references public.matches(id) on delete cascade,
   player_id uuid not null references public.players(id) on delete cascade,
   status public.callup_status not null default 'pending',
@@ -134,6 +189,7 @@ create table public.callups (
 
 create table public.bus_trips (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   matchday_id uuid not null references public.matchdays(id) on delete cascade,
   label text not null default 'Buseta',
   departure_place text,
@@ -154,6 +210,7 @@ create type public.donation_kind as enum ('snack_bar', 'sale', 'other');
 
 create table public.donation_lists (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   matchday_id uuid references public.matchdays(id) on delete set null,
   title text not null,
   description text,
@@ -164,6 +221,7 @@ create table public.donation_lists (
 
 create table public.donation_items (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   list_id uuid not null references public.donation_lists(id) on delete cascade,
   name text not null,
   kind public.donation_kind not null default 'snack_bar',
@@ -176,6 +234,7 @@ create table public.donation_items (
 
 create table public.donation_pledges (
   id uuid primary key default gen_random_uuid(),
+  academy_id uuid not null references public.academies(id) on delete cascade default public.current_academy_id(),
   item_id uuid not null references public.donation_items(id) on delete cascade,
   parent_name text not null,
   player_name text,
@@ -186,9 +245,14 @@ create table public.donation_pledges (
 );
 
 -- Indexes
+create index on public.staff (academy_id);
+create index on public.teams (academy_id);
+create index on public.players (academy_id);
 create index on public.team_players (player_id);
 create index on public.training_teams (team_id);
+create index on public.trainings (academy_id);
 create index on public.trainings (date);
+create index on public.matchdays (academy_id);
 create index on public.matchdays (date);
 create index on public.matches (matchday_id);
 create index on public.matches (team_id);
@@ -199,7 +263,7 @@ create index on public.donation_items (list_id);
 create index on public.donation_pledges (item_id);
 
 -- ---------------------------------------------------------------------------
--- RLS: staff only on every table
+-- RLS: staff can only see/change rows in their own academy
 -- ---------------------------------------------------------------------------
 do $$
 declare t text;
@@ -211,11 +275,15 @@ begin
   ] loop
     execute format('alter table public.%I enable row level security', t);
     execute format(
-      'create policy "staff full access" on public.%I for all to authenticated using (public.is_staff()) with check (public.is_staff())',
+      'create policy "staff full access" on public.%I for all to authenticated using (academy_id = public.current_academy_id()) with check (academy_id = public.current_academy_id())',
       t
     );
   end loop;
 end $$;
+
+alter table public.academies enable row level security;
+create policy "staff can read own academy" on public.academies
+  for select to authenticated using (id = public.current_academy_id());
 
 -- ---------------------------------------------------------------------------
 -- Guest functions (share links)
@@ -347,6 +415,7 @@ returns boolean
 language plpgsql volatile security definer set search_path = public
 as $$
 declare v_item uuid;
+    v_academy_id uuid;
 begin
   if coalesce(trim(p_parent_name), '') = '' then
     raise exception 'name required';
@@ -355,15 +424,15 @@ begin
     raise exception 'invalid quantity';
   end if;
 
-  select i.id into v_item
+  select i.id, i.academy_id into v_item, v_academy_id
     from public.donation_items i
     join public.donation_lists dl on dl.id = i.list_id
    where i.id = p_item_id and dl.share_token = p_token and dl.is_open;
 
   if v_item is null then return false; end if;
 
-  insert into public.donation_pledges (item_id, parent_name, player_name, phone, quantity, note)
-  values (v_item, left(trim(p_parent_name), 120), left(p_player_name, 120),
+  insert into public.donation_pledges (item_id, academy_id, parent_name, player_name, phone, quantity, note)
+  values (v_item, v_academy_id, left(trim(p_parent_name), 120), left(p_player_name, 120),
           left(p_phone, 40), p_quantity, left(p_note, 500));
   return true;
 end;
@@ -378,7 +447,3 @@ grant execute on function public.guest_get_callups(uuid) to anon, authenticated;
 grant execute on function public.guest_respond_callup(uuid, uuid, public.callup_status, public.transport_mode, text) to anon, authenticated;
 grant execute on function public.guest_get_donation_list(uuid) to anon, authenticated;
 grant execute on function public.guest_pledge_donation(uuid, uuid, text, text, text, int, text) to anon, authenticated;
-
--- First staff member
-insert into public.staff (email, full_name) values ('crscastillo@gmail.com', 'Carlos Castillo')
-on conflict do nothing;
