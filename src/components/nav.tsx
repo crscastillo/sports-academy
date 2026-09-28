@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/dashboard", label: "Inicio" },
   { href: "/teams", label: "Equipos" },
   { href: "/players", label: "Atletas" },
+  { href: "/coaches", label: "Entrenadores" },
   { href: "/trainings", label: "Entrenamientos" },
   { href: "/matchdays", label: "Jornadas" },
   { href: "/donations", label: "Donaciones" },

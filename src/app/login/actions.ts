@@ -15,9 +15,6 @@ export async function registerWithPassword(formData: FormData) {
   const academyName = String(formData.get("academy_name") ?? "").trim();
   const next = safeNext(formData.get("next"));
 
-  if (!academyName) {
-    redirect(`/login?mode=register&error=${encodeURIComponent("Ingresá el nombre de tu academia")}&next=${encodeURIComponent(next)}`);
-  }
   if (password.length < 8) {
     redirect(`/login?mode=register&error=${encodeURIComponent("La contraseña debe tener al menos 8 caracteres")}&next=${encodeURIComponent(next)}`);
   }
@@ -32,11 +29,14 @@ export async function registerWithPassword(formData: FormData) {
   }
 
   const { error: academyError } = await supabase.rpc("create_academy", {
-    p_academy_name: academyName,
+    p_academy_name: academyName || null,
     p_full_name: fullName || null,
   });
   if (academyError) {
-    redirect(`/login?error=${encodeURIComponent(academyError.message)}&next=${encodeURIComponent(next)}`);
+    const message = academyError.message.includes("academy name required")
+      ? "Ingresá el nombre de tu academia"
+      : academyError.message;
+    redirect(`/login?mode=register&error=${encodeURIComponent(message)}&next=${encodeURIComponent(next)}`);
   }
   redirect(next);
 }

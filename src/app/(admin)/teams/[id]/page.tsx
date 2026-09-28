@@ -12,7 +12,7 @@ type P = { id: string; first_name: string; last_name: string; jersey_number: num
 export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: team }, { data: roster }, { data: allPlayers }] = await Promise.all([
+  const [{ data: team }, { data: roster }, { data: allPlayers }, { data: coaches }] = await Promise.all([
     supabase.from("teams").select("*").eq("id", id).single(),
     supabase
       .from("team_players")
@@ -23,6 +23,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
       .select("id, first_name, last_name, jersey_number, birth_date, positions, gender")
       .eq("active", true)
       .order("last_name"),
+    supabase.from("coaches").select("id, full_name").order("full_name"),
   ]);
   if (!team) notFound();
 
@@ -93,7 +94,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
 
         <div className="space-y-6">
           <Card title="Editar equipo">
-            <TeamForm action={updateTeam.bind(null, id)} team={team as Team} submitLabel="Guardar" compact />
+            <TeamForm action={updateTeam.bind(null, id)} team={team as Team} coaches={coaches ?? []} submitLabel="Guardar" compact />
           </Card>
           <form action={deleteTeam.bind(null, id)}>
             <ConfirmSubmit message="¿Eliminar este equipo?">Eliminar equipo</ConfirmSubmit>

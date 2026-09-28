@@ -11,7 +11,7 @@ function teamFields(fd: FormData) {
     category: str(fd, "category") ?? "",
     gender: str(fd, "gender") ?? "mixed",
     season: str(fd, "season"),
-    coach: str(fd, "coach"),
+    coach_id: str(fd, "coach_id"),
   };
 }
 

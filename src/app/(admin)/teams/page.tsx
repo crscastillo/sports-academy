@@ -9,17 +9,20 @@ export const metadata = { title: "Equipos" };
 
 export default async function TeamsPage() {
   const supabase = await createClient();
-  const { data: teams } = await supabase
-    .from("teams")
-    .select("id, name, category, gender, season, coach, team_players(count)")
-    .order("category")
-    .order("name");
+  const [{ data: teams }, { data: coaches }] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, name, category, gender, season, coach:coaches(full_name), team_players(count)")
+      .order("category")
+      .order("name"),
+    supabase.from("coaches").select("id, full_name").order("full_name"),
+  ]);
 
   return (
     <>
       <PageHeader title="Equipos" subtitle="Categorías por edad y género" />
       <Card title="Nuevo equipo" className="mb-6">
-        <TeamForm action={createTeam} submitLabel="Crear equipo" />
+        <TeamForm action={createTeam} coaches={coaches ?? []} submitLabel="Crear equipo" />
       </Card>
       {!teams?.length ? (
         <Empty>Aún no hay equipos.</Empty>
@@ -30,7 +33,9 @@ export default async function TeamsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">{t.name}</div>
-                  <div className="text-sm text-muted">{t.coach ?? "Sin entrenador asignado"}</div>
+                  <div className="text-sm text-muted">
+                    {(t.coach as unknown as { full_name: string } | null)?.full_name ?? "Sin entrenador asignado"}
+                  </div>
                 </div>
                 <Badge tone="brand">{t.category}</Badge>
               </div>

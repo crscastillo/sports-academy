@@ -8,10 +8,14 @@ export type Team = {
   category: string;
   gender: string;
   season: string | null;
-  coach: string | null;
+  coach_id: string | null;
 };
 
-export function TeamForm({ action, team, submitLabel, compact = false }: { action: (fd: FormData) => Promise<void>; team?: Team; submitLabel: string; compact?: boolean }) {
+export type CoachOption = { id: string; full_name: string };
+
+export function TeamForm({
+  action, team, coaches = [], submitLabel, compact = false,
+}: { action: (fd: FormData) => Promise<void>; team?: Team; coaches?: CoachOption[]; submitLabel: string; compact?: boolean }) {
   return (
     <form action={action} className={compact ? "grid gap-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-5"}>
       <Field label="Nombre">
@@ -36,7 +40,12 @@ export function TeamForm({ action, team, submitLabel, compact = false }: { actio
         <Input name="season" defaultValue={team?.season ?? ""} placeholder="2026" />
       </Field>
       <Field label="Entrenador">
-        <Input name="coach" defaultValue={team?.coach ?? ""} />
+        <Select name="coach_id" defaultValue={team?.coach_id ?? ""}>
+          <option value="">Sin entrenador asignado</option>
+          {coaches.map((c) => (
+            <option key={c.id} value={c.id}>{c.full_name}</option>
+          ))}
+        </Select>
       </Field>
       <div className={compact ? "" : "sm:col-span-2 lg:col-span-5"}>
         <SubmitButton>{submitLabel}</SubmitButton>

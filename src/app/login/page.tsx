@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         {isRegister ? (
           <form action={registerWithPassword} className="space-y-3">
             <input type="hidden" name="next" value={next} />
-            <Field label="Nombre de la academia"><Input name="academy_name" required autoComplete="organization" /></Field>
+            <Field label="Nombre de la academia" hint="Dejalo vacío si ya te invitaron a una academia"><Input name="academy_name" autoComplete="organization" /></Field>
             <Field label="Tu nombre"><Input name="full_name" autoComplete="name" /></Field>
             <Field label="Correo"><Input type="email" name="email" required autoComplete="email" /></Field>
             <Field label="Contraseña"><Input type="password" name="password" required autoComplete="new-password" minLength={8} /></Field>
