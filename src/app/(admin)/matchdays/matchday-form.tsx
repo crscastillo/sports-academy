@@ -22,7 +22,7 @@ export function MatchdayForm({ action, matchday, submitLabel, defaultDate }: { a
       <Field label="Notas" className="sm:col-span-2"><Textarea name="notes" rows={2} defaultValue={matchday?.notes ?? ""} placeholder="Uniforme blanco, llegar 45 min antes…" /></Field>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="is_home" defaultChecked={matchday?.is_home} className="accent-[var(--brand)]" />
-        Jornada en casa (habilita lista de soda y ventas)
+        Jornada en casa (habilita soda y ventas, oculta transporte)
       </label>
       <div className="sm:col-span-2"><SubmitButton>{submitLabel}</SubmitButton></div>
     </form>

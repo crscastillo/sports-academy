@@ -62,12 +62,14 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         action={<Link href="/matchdays" className="text-sm text-muted hover:underline">← Jornadas</Link>}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className={`mb-6 grid grid-cols-2 gap-3 ${matchday.is_home ? "sm:grid-cols-4" : "sm:grid-cols-5"}`}>
         <Stat label="Partidos" value={rows.length} />
         <Stat label="Confirmados" value={confirmed.length} tone="text-green-600" />
         <Stat label="Pendientes" value={pending} tone="text-amber-600" />
         <Stat label="No asisten" value={declined} tone="text-red-600" />
-        <Stat label="En buseta" value={`${busRiders.size}${capacity ? ` / ${capacity}` : ""}`} tone={capacity && busRiders.size > capacity ? "text-red-600" : ""} />
+        {!matchday.is_home && (
+          <Stat label="En buseta" value={`${busRiders.size}${capacity ? ` / ${capacity}` : ""}`} tone={capacity && busRiders.size > capacity ? "text-red-600" : ""} />
+        )}
       </div>
 
       <Card title="Link de convocatoria para padres" className="mb-6">
@@ -109,6 +111,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         </div>
 
         <div className="space-y-6">
+          {!matchday.is_home && (
           <Card title="Transporte (buseta)">
             {trips.length === 0 && <p className="mb-3 text-sm text-muted">Sin busetas planificadas.</p>}
             <div className="space-y-3">
@@ -172,6 +175,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
               <p className="mt-2 text-xs text-muted">{ownCount} llegan por sus propios medios.</p>
             </div>
           </Card>
+          )}
 
           {matchday.is_home && (
             <Card title="Soda y ventas">
