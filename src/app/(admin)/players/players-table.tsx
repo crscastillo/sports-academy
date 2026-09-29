@@ -8,7 +8,7 @@ import { ageOn, GENDERS } from "@/lib/labels";
 export type Row = {
   id: string; first_name: string; last_name: string; jersey_number: number | null; national_id: string | null;
   birth_date: string | null; height_cm: number | null; positions: string[]; active: boolean; gender: string | null;
-  team_players: { team: { id: string; name: string; category: string } }[];
+  team_players: { team: { id: string; name: string; category: string; gender: string } }[];
 };
 
 type TeamOpt = { id: string; name: string; category: string };
@@ -25,7 +25,8 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
       if (!showInactive && !p.active) return false;
       if (teamId && !p.team_players.some((tp) => tp.team?.id === teamId)) return false;
       if (gender) {
-        const genderOk = gender === "mixed" ? !p.gender : p.gender === gender;
+        const genderOk =
+          gender === "mixed" ? p.team_players.some((tp) => tp.team?.gender === "mixed") : p.gender === gender;
         if (!genderOk) return false;
       }
       if (needle) {

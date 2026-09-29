@@ -9,7 +9,7 @@ export default async function PlayersPage() {
   const [{ data }, { data: teams }] = await Promise.all([
     supabase
       .from("players")
-      .select("id, first_name, last_name, jersey_number, national_id, birth_date, height_cm, positions, active, gender, team_players(team:teams(id, name, category))")
+      .select("id, first_name, last_name, jersey_number, national_id, birth_date, height_cm, positions, active, gender, team_players(team:teams(id, name, category, gender))")
       .order("last_name"),
     supabase.from("teams").select("id, name, category").order("category"),
   ]);
