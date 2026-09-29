@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { formatDate, formatTime, genderLabel } from "@/lib/labels";
 
 type Match = {
@@ -14,8 +14,8 @@ type Data = { academy: { name: string }; upcoming: Jornada[]; past: Jornada[] };
 
 export async function generateMetadata({ params }: PageProps<"/a/[slug]">) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("guest_get_academy_schedule", { p_slug: slug });
+  const { public: publicRepo } = await getRepositories();
+  const data = await publicRepo.getAcademySchedule(slug);
   const d = data as Data | null;
   if (!d) return {};
   return { title: d.academy.name, description: `Jornadas y resultados de ${d.academy.name}.` };
@@ -69,8 +69,8 @@ function JornadaCard({ j }: { j: Jornada }) {
 
 export default async function AcademyPublicPage({ params }: PageProps<"/a/[slug]">) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("guest_get_academy_schedule", { p_slug: slug });
+  const { public: publicRepo } = await getRepositories();
+  const data = await publicRepo.getAcademySchedule(slug);
   if (!data) notFound();
   const d = data as Data;
 

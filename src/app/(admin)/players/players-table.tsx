@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { UserRound } from "lucide-react";
 import { Badge, Card, Empty, Input, Select } from "@/components/ui";
+import { FilterPills } from "@/components/elements/filter-pills";
 import { ageOn, GENDERS } from "@/lib/labels";
 import { AgeGenderChart } from "./age-gender-chart";
 import { AgeGenderRadarChart } from "./age-gender-radar-chart";
@@ -60,17 +61,8 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> Incluir inactivos
           </label>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1">
-          {[{ value: "", label: "Todos" }, ...GENDERS].map((g) => (
-            <button
-              key={g.value}
-              type="button"
-              onClick={() => setGender(g.value)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${gender === g.value ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
-            >
-              {g.label}
-            </button>
-          ))}
+        <div className="mt-3">
+          <FilterPills options={[{ value: "", label: "Todos" }, ...GENDERS]} value={gender} onSelect={setGender} />
         </div>
       </div>
       {filtered.length === 0 ? (

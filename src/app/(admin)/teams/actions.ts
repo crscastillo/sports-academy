@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { list, str } from "@/lib/form";
 
 function teamFields(fd: FormData) {
@@ -16,42 +16,34 @@ function teamFields(fd: FormData) {
 }
 
 export async function createTeam(fd: FormData) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("teams").insert(teamFields(fd)).select("id").single();
-  if (error) throw new Error(error.message);
+  const { teams } = await getRepositories();
+  const id = await teams.create(teamFields(fd));
   revalidatePath("/teams");
-  redirect(`/teams/${data.id}`);
+  redirect(`/teams/${id}`);
 }
 
 export async function updateTeam(id: string, fd: FormData) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("teams").update(teamFields(fd)).eq("id", id);
-  if (error) throw new Error(error.message);
+  const { teams } = await getRepositories();
+  await teams.update(id, teamFields(fd));
   revalidatePath(`/teams/${id}`);
   revalidatePath("/teams");
 }
 
 export async function deleteTeam(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("teams").delete().eq("id", id);
-  if (error) throw new Error("No se puede eliminar: el equipo tiene partidos asociados.");
+  const { teams } = await getRepositories();
+  await teams.delete(id);
   revalidatePath("/teams");
   redirect("/teams");
 }
 
 export async function addPlayersToTeam(teamId: string, fd: FormData) {
-  const ids = list(fd, "player_id");
-  if (ids.length === 0) return;
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("team_players")
-    .upsert(ids.map((player_id) => ({ team_id: teamId, player_id })), { ignoreDuplicates: true });
-  if (error) throw new Error(error.message);
+  const { teams } = await getRepositories();
+  await teams.addPlayers(teamId, list(fd, "player_id"));
   revalidatePath(`/teams/${teamId}`);
 }
 
 export async function removePlayerFromTeam(teamId: string, playerId: string) {
-  const supabase = await createClient();
-  await supabase.from("team_players").delete().eq("team_id", teamId).eq("player_id", playerId);
+  const { teams } = await getRepositories();
+  await teams.removePlayer(teamId, playerId);
   revalidatePath(`/teams/${teamId}`);
 }

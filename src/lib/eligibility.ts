@@ -1,4 +1,3 @@
-import type { createClient } from "@/lib/supabase/server";
 import { ageAchievedThisYear, categoryAgeCap } from "@/lib/labels";
 
 export type AgeThresholds = { min: number; max: number | null };
@@ -26,11 +25,4 @@ export function isPlayerEligibleForTeam(
     (cap >= age - thresholds.min && (thresholds.max == null || cap <= age + thresholds.max));
   const genderOk = !player.gender || team.gender === "mixed" || team.gender === player.gender;
   return ageOk && genderOk;
-}
-
-/** Reads the current academy's configured age-eligibility thresholds (Settings page). */
-export async function getAgeThresholds(supabase: Awaited<ReturnType<typeof createClient>>): Promise<AgeThresholds> {
-  const { data } = await supabase.from("academies").select("age_eligibility_min, age_eligibility_max").single();
-  if (!data) return DEFAULT_AGE_THRESHOLDS;
-  return { min: data.age_eligibility_min, max: data.age_eligibility_max };
 }

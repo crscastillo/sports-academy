@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, Empty, LinkButton, PageHeader, Stat } from "@/components/ui";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatTime, shiftDate, todayISO } from "@/lib/labels";
@@ -17,31 +17,20 @@ type Result = {
 };
 
 export default async function Dashboard() {
-  const supabase = await createClient();
+  const { players, teams, matchdays, trainings, academy } = await getRepositories();
   const today = todayISO();
   const weekAgo = shiftDate(today, -7);
-  const [{ count: players }, { count: teams }, { data: mds }, { data: trs }, { data: res }, { data: academy }] = await Promise.all([
-    supabase.from("players").select("id", { count: "exact", head: true }).eq("active", true),
-    supabase.from("teams").select("id", { count: "exact", head: true }),
-    supabase
-      .from("matchdays")
-      .select("id, title, date, venue, is_home, matches(callups(status, player_id)), matchday_transport(player_id, transport)")
-      .gte("date", today).order("date").limit(4),
-    supabase
-      .from("trainings")
-      .select("id, date, start_time, location, training_teams(team:teams(category))")
-      .gte("date", today).eq("status", "planned").order("date").order("start_time").limit(6),
-    supabase
-      .from("matches")
-      .select("id, opponent, score_for, score_against, team:teams(name, category), matchday:matchdays!inner(id, date, title)")
-      .not("score_for", "is", null)
-      .gte("matchday.date", weekAgo).lt("matchday.date", today)
-      .order("date", { foreignTable: "matchday", ascending: false }),
-    supabase.from("academies").select("slug, is_public").single(),
+  const [playerCount, teamCount, mds, trs, res, settings] = await Promise.all([
+    players.countActive(),
+    teams.count(),
+    matchdays.listUpcomingForDashboard(today, 4),
+    trainings.listUpcomingPlanned(today, 6),
+    matchdays.listRecentScores(weekAgo, today),
+    academy.getSettings(),
   ]);
-  const matchdays = (mds ?? []) as unknown as Md[];
-  const trainings = (trs ?? []) as unknown as Tr[];
-  const results = (res ?? []) as unknown as Result[];
+  const matchdayRows = mds as unknown as Md[];
+  const trainingRows = trs as unknown as Tr[];
+  const results = res as unknown as Result[];
 
   return (
     <>
@@ -49,8 +38,8 @@ export default async function Dashboard() {
         title="Inicio"
         subtitle={formatDate(today, { weekday: "long" })}
         action={
-          academy?.is_public && academy.slug ? (
-            <a href={`/a/${academy.slug}`} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", className: "h-9 px-3.5" })}>
+          settings?.is_public && settings.slug ? (
+            <a href={`/a/${settings.slug}`} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", className: "h-9 px-3.5" })}>
               🌐 Página pública
             </a>
           ) : (
@@ -59,18 +48,18 @@ export default async function Dashboard() {
         }
       />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Atletas activos" value={players ?? 0} />
-        <Stat label="Equipos" value={teams ?? 0} />
-        <Stat label="Próximas jornadas" value={matchdays.length} />
-        <Stat label="Entrenamientos planificados" value={trainings.length} />
+        <Stat label="Atletas activos" value={playerCount} />
+        <Stat label="Equipos" value={teamCount} />
+        <Stat label="Próximas jornadas" value={matchdayRows.length} />
+        <Stat label="Entrenamientos planificados" value={trainingRows.length} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Próximas jornadas" action={<LinkButton href="/matchdays/new" variant="secondary">+ Jornada</LinkButton>}>
-          {matchdays.length === 0 ? (
+          {matchdayRows.length === 0 ? (
             <Empty>Sin jornadas próximas.</Empty>
           ) : (
             <ul className="divide-y divide-border">
-              {matchdays.map((m) => {
+              {matchdayRows.map((m) => {
                 const c = m.matches.flatMap((x) => x.callups);
                 const pend = c.filter((x) => x.status === "pending").length;
                 const conf = c.filter((x) => x.status === "confirmed").length;
@@ -98,11 +87,11 @@ export default async function Dashboard() {
           )}
         </Card>
         <Card title="Próximos entrenamientos" action={<LinkButton href="/trainings" variant="secondary">Planificador</LinkButton>}>
-          {trainings.length === 0 ? (
+          {trainingRows.length === 0 ? (
             <Empty>Sin entrenamientos planificados.</Empty>
           ) : (
             <ul className="divide-y divide-border">
-              {trainings.map((t) => (
+              {trainingRows.map((t) => (
                 <li key={t.id} className="py-2.5">
                   <Link href={`/trainings/${t.id}`} className="flex items-center justify-between gap-2 text-sm hover:underline">
                     <span>

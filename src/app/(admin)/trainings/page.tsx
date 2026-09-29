@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, LinkButton, PageHeader } from "@/components/ui";
 import { formatDate, formatTime, todayISO, trainingStatusLabel } from "@/lib/labels";
 
@@ -32,22 +32,13 @@ export default async function TrainingsPage({ searchParams }: PageProps<"/traini
   const start = mondayOf(weekParam);
   const end = shift(start, 6);
 
-  const supabase = await createClient();
-  const [{ data: week }, { data: recent }] = await Promise.all([
-    supabase
-      .from("trainings")
-      .select("id, date, start_time, end_time, location, status, plan, notes, training_teams(team:teams(id, name, category))")
-      .gte("date", start).lte("date", end)
-      .order("date").order("start_time"),
-    supabase
-      .from("trainings")
-      .select("id, date, start_time, end_time, location, status, plan, notes, training_teams(team:teams(id, name, category))")
-      .eq("status", "completed")
-      .order("date", { ascending: false })
-      .limit(10),
+  const { trainings } = await getRepositories();
+  const [week, recent] = await Promise.all([
+    trainings.listInRange(start, end),
+    trainings.listRecentCompleted(10),
   ]);
-  const rows = (week ?? []) as unknown as Row[];
-  const done = (recent ?? []) as unknown as Row[];
+  const rows = week as unknown as Row[];
+  const done = recent as unknown as Row[];
 
   return (
     <>

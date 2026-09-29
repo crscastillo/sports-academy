@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 
 export async function respondCallup(
   token: string,
@@ -9,26 +9,17 @@ export async function respondCallup(
   status: "confirmed" | "declined",
   note: string,
 ) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("guest_respond_callup", {
-    p_token: token,
-    p_callup_id: callupId,
-    p_status: status,
-    p_note: note.trim() || null,
-  });
-  if (error || !data) return { ok: false as const };
+  const { matchdays } = await getRepositories();
+  const ok = await matchdays.guestRespondCallup(token, callupId, status, note);
+  if (!ok) return { ok: false as const };
   revalidatePath(`/c/${token}`);
   return { ok: true as const };
 }
 
 export async function setTransport(token: string, playerId: string, transport: "bus" | "own" | "no_go") {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("guest_set_transport", {
-    p_token: token,
-    p_player_id: playerId,
-    p_transport: transport,
-  });
-  if (error || !data) return { ok: false as const };
+  const { matchdays } = await getRepositories();
+  const ok = await matchdays.guestSetTransport(token, playerId, transport);
+  if (!ok) return { ok: false as const };
   revalidatePath(`/c/${token}`);
   return { ok: true as const };
 }

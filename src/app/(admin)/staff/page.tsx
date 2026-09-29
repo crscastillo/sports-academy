@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { getRepositories } from "@/lib/repositories";
 import { createClient } from "@/lib/supabase/server";
 import { Card, Field, Input, PageHeader } from "@/components/ui";
 import { AutoSubmitForm, ShareLink, SubmitButton } from "@/components/client";
@@ -8,11 +9,8 @@ export const metadata = { title: "Personal" };
 
 async function setAcademyPublic(fd: FormData) {
   "use server";
-  const supabase = await createClient();
-  const { data: academy } = await supabase.from("academies").select("id").single();
-  if (!academy) return;
-  const { error } = await supabase.from("academies").update({ is_public: bool(fd, "is_public") }).eq("id", academy.id);
-  if (error) throw new Error(error.message);
+  const { academy } = await getRepositories();
+  await academy.updateVisibility(bool(fd, "is_public"));
   revalidatePath("/staff");
 }
 
@@ -20,9 +18,8 @@ async function addStaff(fd: FormData) {
   "use server";
   const email = str(fd, "email")?.toLowerCase();
   if (!email) return;
-  const supabase = await createClient();
-  const { error } = await supabase.from("staff").upsert({ email, full_name: str(fd, "full_name") });
-  if (error) throw new Error(error.message);
+  const { staff } = await getRepositories();
+  await staff.add(email, str(fd, "full_name"));
   revalidatePath("/staff");
 }
 
@@ -31,39 +28,37 @@ async function removeStaff(email: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.email?.toLowerCase() === email.toLowerCase()) throw new Error("No podés quitarte a vos mismo.");
-  await supabase.from("staff").delete().eq("email", email);
+  const { staff } = await getRepositories();
+  await staff.remove(email);
   revalidatePath("/staff");
 }
 
 export default async function StaffPage() {
-  const supabase = await createClient();
-  const [{ data: staff }, { data: academy }] = await Promise.all([
-    supabase.from("staff").select("email, full_name, created_at").order("created_at"),
-    supabase.from("academies").select("slug, is_public").single(),
-  ]);
+  const { staff, academy } = await getRepositories();
+  const [staffList, settings] = await Promise.all([staff.list(), academy.getSettings()]);
   return (
     <>
       <PageHeader title="Personal" subtitle="Entrenadores y administradores con acceso a la app" />
 
-      {academy && (
+      {settings && (
         <Card title="Página pública de la academia" className="mb-6">
           <p className="mb-3 text-sm text-muted-foreground">
             Una página de solo lectura con las jornadas próximas y los resultados anteriores. No muestra atletas ni datos de contacto.
           </p>
           <AutoSubmitForm action={setAcademyPublic} className="mb-3">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="is_public" defaultChecked={academy.is_public} className="accent-[var(--brand)]" />
+              <input type="checkbox" name="is_public" defaultChecked={settings.is_public} className="accent-[var(--brand)]" />
               Página pública activa
             </label>
           </AutoSubmitForm>
-          {academy.is_public && <ShareLink path={`/a/${academy.slug}`} label="Copiar link" />}
+          {settings.is_public && <ShareLink path={`/a/${settings.slug}`} label="Copiar link" />}
         </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title="Con acceso" className="lg:col-span-2">
           <ul className="divide-y divide-border">
-            {staff?.map((s) => (
+            {staffList.map((s) => (
               <li key={s.email} className="flex items-center justify-between py-2 text-sm">
                 <span>
                   <span className="font-medium">{s.full_name ?? s.email}</span>

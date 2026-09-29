@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, Empty, PageHeader } from "@/components/ui";
 import { ConfirmSubmit, SubmitButton } from "@/components/client";
 import { ageOn, genderLabel } from "@/lib/labels";
-import { getAgeThresholds, isPlayerEligibleForTeam } from "@/lib/eligibility";
+import { isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { addPlayersToTeam, deleteTeam, removePlayerFromTeam, updateTeam } from "../actions";
 import { TeamForm, type Team } from "../team-form";
 
@@ -12,28 +12,21 @@ type P = { id: string; first_name: string; last_name: string; jersey_number: num
 
 export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const [{ data: team }, { data: roster }, { data: allPlayers }, { data: coaches }, thresholds] = await Promise.all([
-    supabase.from("teams").select("*").eq("id", id).single(),
-    supabase
-      .from("team_players")
-      .select("player:players(id, first_name, last_name, jersey_number, birth_date, positions, gender)")
-      .eq("team_id", id),
-    supabase
-      .from("players")
-      .select("id, first_name, last_name, jersey_number, birth_date, positions, gender")
-      .eq("active", true)
-      .order("last_name"),
-    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
-    getAgeThresholds(supabase),
+  const { teams, players, coaches, academy } = await getRepositories();
+  const [team, roster, allPlayers, coachOptions, thresholds] = await Promise.all([
+    teams.getById(id),
+    teams.getRoster(id),
+    players.listActiveForEligibility(),
+    coaches.listForAssignment(),
+    academy.getAgeThresholds(),
   ]);
   if (!team) notFound();
 
-  const members = ((roster ?? []).map((r) => r.player) as unknown as P[]).sort((a, b) =>
+  const members = (roster as unknown as P[]).sort((a, b) =>
     (a.jersey_number ?? 999) - (b.jersey_number ?? 999) || a.last_name.localeCompare(b.last_name),
   );
   const memberIds = new Set(members.map((m) => m.id));
-  const available = ((allPlayers ?? []) as P[]).filter((p) => !memberIds.has(p.id) && isPlayerEligibleForTeam(p, team, thresholds));
+  const available = (allPlayers as unknown as P[]).filter((p) => !memberIds.has(p.id) && isPlayerEligibleForTeam(p, team, thresholds));
 
   return (
     <>
@@ -96,7 +89,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
 
         <div className="space-y-6">
           <Card title="Editar equipo">
-            <TeamForm action={updateTeam.bind(null, id)} team={team as Team} coaches={coaches ?? []} submitLabel="Guardar" compact />
+            <TeamForm action={updateTeam.bind(null, id)} team={team as Team} coaches={coachOptions} submitLabel="Guardar" compact />
           </Card>
           <form action={deleteTeam.bind(null, id)}>
             <ConfirmSubmit message="¿Eliminar este equipo?">Eliminar equipo</ConfirmSubmit>

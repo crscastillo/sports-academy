@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Badge, Button, Card, Empty, Field, Input, PageHeader, Select } from "@/components/ui";
 import { ConfirmSubmit, SubmitButton } from "@/components/client";
+import { FilterPills } from "@/components/elements/filter-pills";
 import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { COACH_TYPES, coachTypeLabel } from "@/lib/labels";
 import { createCoach, deleteCoach, inviteCoach, setDefaultCoach, unsetDefaultCoach, updateCoach } from "./actions";
 
@@ -12,18 +12,12 @@ export default async function CoachesPage({ searchParams }: PageProps<"/coaches"
   const sp = await searchParams;
   const type = typeof sp.type === "string" ? sp.type : "";
 
-  const supabase = await createClient();
-  let query = supabase.from("coaches").select("id, full_name, email, phone, type, is_default").order("full_name");
-  if (type) query = query.eq("type", type);
-  const [{ data: coaches }, { data: staff }, { data: teams }] = await Promise.all([
-    query,
-    supabase.from("staff").select("email"),
-    supabase.from("teams").select("name, coach_id"),
-  ]);
+  const { coaches, staff, teams } = await getRepositories();
+  const [coachRows, staffList, teamRows] = await Promise.all([coaches.listFull(type), staff.listEmails(), teams.listNamesWithCoach()]);
 
-  const staffEmails = new Set((staff ?? []).map((s) => s.email.toLowerCase()));
+  const staffEmails = new Set(staffList.map((s) => s.email.toLowerCase()));
   const teamsByCoach = new Map<string, string[]>();
-  for (const t of teams ?? []) {
+  for (const t of teamRows) {
     if (!t.coach_id) continue;
     teamsByCoach.set(t.coach_id, [...(teamsByCoach.get(t.coach_id) ?? []), t.name]);
   }
@@ -49,23 +43,15 @@ export default async function CoachesPage({ searchParams }: PageProps<"/coaches"
           </ResponsiveDialog>
         }
       />
-      <div className="mb-4 flex flex-wrap gap-1">
-        {[{ value: "", label: "Todos" }, ...COACH_TYPES].map((t) => (
-          <Link
-            key={t.value}
-            href={t.value ? `/coaches?type=${t.value}` : "/coaches"}
-            className={`rounded-lg px-3 py-1.5 text-sm ${type === t.value ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
-          >
-            {t.label}
-          </Link>
-        ))}
+      <div className="mb-4">
+        <FilterPills options={[{ value: "", label: "Todos" }, ...COACH_TYPES]} value={type} hrefFor={(v) => (v ? `/coaches?type=${v}` : "/coaches")} />
       </div>
 
-      {!coaches?.length ? (
+      {!coachRows.length ? (
         <Empty>Aún no hay entrenadores.</Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {coaches.map((c) => {
+          {coachRows.map((c) => {
             const invited = c.email ? staffEmails.has(c.email.toLowerCase()) : false;
             const teamNames = teamsByCoach.get(c.id) ?? [];
             return (

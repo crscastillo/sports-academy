@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Nav } from "@/components/nav";
 
 export default async function AdminLayout({ children }: LayoutProps<"/">) {
@@ -7,7 +8,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: isStaff } = await supabase.rpc("is_staff");
+  const { academy: academyRepo } = await getRepositories();
+  const isStaff = await academyRepo.isStaff();
   if (!isStaff) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6 text-center">
@@ -24,7 +26,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
     );
   }
 
-  const { data: academy } = await supabase.from("academies").select("track_payments").single();
+  const academy = await academyRepo.getSettings();
 
   return (
     <div className="md:flex">

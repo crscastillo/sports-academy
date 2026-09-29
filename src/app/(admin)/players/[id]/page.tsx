@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { UserRound } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
 import { ageOn, CALLUP_STATUS, formatDate } from "@/lib/labels";
-import { getAgeThresholds, isPlayerEligibleForTeam } from "@/lib/eligibility";
+import { isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { deletePlayer, updatePlayer } from "../actions";
 import { PlayerForm, type Player } from "../player-form";
 
@@ -17,27 +17,24 @@ type CallupRow = {
 
 export default async function PlayerPage({ params }: PageProps<"/players/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const [{ data: player }, { data: teams }, { data: links }, { data: callups }, thresholds] = await Promise.all([
-    supabase.from("players").select("*").eq("id", id).single(),
-    supabase.from("teams").select("id, name, category, gender").order("category"),
-    supabase.from("team_players").select("team_id").eq("player_id", id),
-    supabase
-      .from("callups")
-      .select("id, status, attended, match:matches(opponent, matchday:matchdays(id, date, venue))")
-      .eq("player_id", id),
-    getAgeThresholds(supabase),
+  const { players, teams, academy } = await getRepositories();
+  const [player, teamOptions, links, callups, thresholds] = await Promise.all([
+    players.getById(id),
+    teams.listBasic(),
+    players.getTeamIds(id),
+    players.getCallupHistory(id),
+    academy.getAgeThresholds(),
   ]);
   if (!player) notFound();
 
-  const rows = ((callups ?? []) as unknown as CallupRow[]).sort((a, b) => b.match.matchday.date.localeCompare(a.match.matchday.date));
+  const rows = (callups as unknown as CallupRow[]).sort((a, b) => b.match.matchday.date.localeCompare(a.match.matchday.date));
   const attended = rows.filter((c) => c.attended === true).length;
   const marked = rows.filter((c) => c.attended !== null).length;
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
-  const selectedTeamIds = (links ?? []).map((l) => l.team_id);
-  const eligibleTeams = (teams ?? []).filter((t) => selectedTeamIds.includes(t.id) || isPlayerEligibleForTeam(p, t, thresholds));
+  const selectedTeamIds = links;
+  const eligibleTeams = teamOptions.filter((t) => selectedTeamIds.includes(t.id) || isPlayerEligibleForTeam(p, t, thresholds));
 
   return (
     <>

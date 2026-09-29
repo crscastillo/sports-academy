@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Card, Field, Input, PageHeader } from "@/components/ui";
 import { SubmitButton } from "@/components/client";
 import { updateAgeThresholds, updatePaymentSettings } from "./actions";
@@ -6,11 +6,8 @@ import { updateAgeThresholds, updatePaymentSettings } from "./actions";
 export const metadata = { title: "Configuración" };
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: academy } = await supabase
-    .from("academies")
-    .select("age_eligibility_min, age_eligibility_max, track_payments, default_monthly_fee")
-    .single();
+  const { academy: academyRepo } = await getRepositories();
+  const academy = await academyRepo.getSettings();
 
   return (
     <>

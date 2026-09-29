@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { formatDate, formatTime } from "@/lib/labels";
 import { CallupBoard, type GuestMatch, type GuestPlayer } from "./callup-board";
 
@@ -15,8 +15,8 @@ type Data = {
 export default async function GuestCallupPage({ params }: PageProps<"/c/[token]">) {
   const { token } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(token)) notFound();
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("guest_get_callups", { p_token: token });
+  const { matchdays } = await getRepositories();
+  const data = await matchdays.guestGetCallups(token);
   if (!data) notFound();
   const d = data as Data;
   const md = d.matchday;

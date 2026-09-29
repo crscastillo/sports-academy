@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, Empty, Field, Input, PageHeader, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/client";
 import { formatDate, todayISO } from "@/lib/labels";
@@ -14,15 +14,12 @@ type Row = {
 };
 
 export default async function DonationsPage() {
-  const supabase = await createClient();
-  const [{ data }, { data: homeDays }] = await Promise.all([
-    supabase
-      .from("donation_lists")
-      .select("id, title, is_open, created_at, matchday:matchdays(date, venue), donation_items(quantity_needed, donation_pledges(quantity))")
-      .order("created_at", { ascending: false }),
-    supabase.from("matchdays").select("id, title, date, venue").eq("is_home", true).gte("date", todayISO()).order("date"),
+  const { donations } = await getRepositories();
+  const [data, homeDays] = await Promise.all([
+    donations.listWithProgress(),
+    donations.listLinkableMatchdays(true, todayISO()),
   ]);
-  const lists = (data ?? []) as unknown as Row[];
+  const lists = data as unknown as Row[];
 
   return (
     <>

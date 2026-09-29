@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, Empty, Input, PageHeader, Select, Stat } from "@/components/ui";
 import { SubmitButton } from "@/components/client";
 import { PAYMENT_STATUS, monthLabel, monthStart, shiftMonth, todayISO } from "@/lib/labels";
@@ -16,8 +16,8 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/payment
   const sp = await searchParams;
   const period = monthStart(typeof sp.period === "string" && /^\d{4}-\d{2}/.test(sp.period) ? sp.period : todayISO());
 
-  const supabase = await createClient();
-  const { data: academy } = await supabase.from("academies").select("track_payments, default_monthly_fee").single();
+  const { academy: academyRepo, players, payments: paymentsRepo } = await getRepositories();
+  const academy = await academyRepo.getSettings();
 
   if (!academy?.track_payments) {
     return (
@@ -31,13 +31,13 @@ export default async function PaymentsPage({ searchParams }: PageProps<"/payment
     );
   }
 
-  const [{ data: players }, { data: payments }] = await Promise.all([
-    supabase.from("players").select("id, first_name, last_name").eq("active", true).order("last_name"),
-    supabase.from("payments").select("player_id, amount, status, paid_at").eq("period", period),
+  const [playerRows, paymentRows] = await Promise.all([
+    players.listActiveNames(),
+    paymentsRepo.listForPeriod(period),
   ]);
 
-  const byPlayer = new Map((payments as PaymentRow[] | null ?? []).map((p) => [p.player_id, p]));
-  const rows = (players as PlayerRow[] | null ?? []).map((p) => ({ player: p, payment: byPlayer.get(p.id) ?? null }));
+  const byPlayer = new Map((paymentRows as PaymentRow[]).map((p) => [p.player_id, p]));
+  const rows = (playerRows as PlayerRow[]).map((p) => ({ player: p, payment: byPlayer.get(p.id) ?? null }));
 
   const paid = rows.filter((r) => r.payment?.status === "paid");
   const waived = rows.filter((r) => r.payment?.status === "waived").length;

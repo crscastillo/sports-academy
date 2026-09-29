@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Button, Empty, PageHeader } from "@/components/ui";
+import { FilterPills } from "@/components/elements/filter-pills";
 import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
 import { GENDERS, genderLabel } from "@/lib/labels";
 import { createTeam } from "./actions";
@@ -12,17 +13,8 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
   const sp = await searchParams;
   const gender = typeof sp.gender === "string" ? sp.gender : "";
 
-  const supabase = await createClient();
-  let query = supabase
-    .from("teams")
-    .select("id, name, category, gender, season, coach:coaches(full_name), team_players(count)")
-    .order("category")
-    .order("name");
-  if (gender) query = query.eq("gender", gender);
-  const [{ data: teams }, { data: coaches }] = await Promise.all([
-    query,
-    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
-  ]);
+  const { teams, coaches } = await getRepositories();
+  const [teamRows, coachOptions] = await Promise.all([teams.listWithCoachAndCount(gender), coaches.listForAssignment()]);
 
   return (
     <>
@@ -31,26 +23,18 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
         subtitle="Categorías por edad y género"
         action={
           <ResponsiveDialog trigger={<Button>+ Nuevo equipo</Button>} title="Nuevo equipo">
-            <TeamForm action={createTeam} coaches={coaches ?? []} submitLabel="Crear equipo" compact />
+            <TeamForm action={createTeam} coaches={coachOptions} submitLabel="Crear equipo" compact />
           </ResponsiveDialog>
         }
       />
-      <div className="mb-4 flex flex-wrap gap-1">
-        {[{ value: "", label: "Todos" }, ...GENDERS].map((g) => (
-          <Link
-            key={g.value}
-            href={g.value ? `/teams?gender=${g.value}` : "/teams"}
-            className={`rounded-lg px-3 py-1.5 text-sm ${gender === g.value ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
-          >
-            {g.label}
-          </Link>
-        ))}
+      <div className="mb-4">
+        <FilterPills options={[{ value: "", label: "Todos" }, ...GENDERS]} value={gender} hrefFor={(v) => (v ? `/teams?gender=${v}` : "/teams")} />
       </div>
-      {!teams?.length ? (
+      {!teamRows.length ? (
         <Empty>Aún no hay equipos.</Empty>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {teams.map((t) => (
+          {teamRows.map((t) => (
             <Link key={t.id} href={`/teams/${t.id}`} className="rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary">
               <div className="flex items-start justify-between gap-2">
                 <div>

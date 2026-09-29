@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Card, PageHeader } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
 import { formatDate } from "@/lib/labels";
@@ -9,11 +9,11 @@ import { TrainingForm, type Training } from "../training-form";
 
 export default async function TrainingPage({ params }: PageProps<"/trainings/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const [{ data: training }, { data: teams }, { data: links }] = await Promise.all([
-    supabase.from("trainings").select("*").eq("id", id).single(),
-    supabase.from("teams").select("id, name, category").order("category"),
-    supabase.from("training_teams").select("team_id").eq("training_id", id),
+  const { trainings, teams } = await getRepositories();
+  const [training, teamOptions, selectedTeamIds] = await Promise.all([
+    trainings.getById(id),
+    teams.listBasic(),
+    trainings.getTeamIds(id),
   ]);
   if (!training) notFound();
   const t = training as Training;
@@ -28,8 +28,8 @@ export default async function TrainingPage({ params }: PageProps<"/trainings/[id
         <TrainingForm
           action={updateTraining.bind(null, id)}
           training={t}
-          teams={teams ?? []}
-          selectedTeamIds={(links ?? []).map((l) => l.team_id)}
+          teams={teamOptions}
+          selectedTeamIds={selectedTeamIds}
           submitLabel="Guardar cambios"
         />
       </Card>

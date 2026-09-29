@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 
 function safeNext(raw: FormDataEntryValue | null) {
   const n = String(raw ?? "/dashboard");
@@ -28,14 +29,12 @@ export async function registerWithPassword(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent("Cuenta creada. Ya podés ingresar con tu correo y contraseña.")}&next=${encodeURIComponent(next)}`);
   }
 
-  const { error: academyError } = await supabase.rpc("create_academy", {
-    p_academy_name: academyName || null,
-    p_full_name: fullName || null,
-  });
-  if (academyError) {
-    const message = academyError.message.includes("academy name required")
-      ? "Ingresá el nombre de tu academia"
-      : academyError.message;
+  try {
+    const { academy } = await getRepositories();
+    await academy.createAcademy(academyName || null, fullName || null);
+  } catch (academyError) {
+    const raw = academyError instanceof Error ? academyError.message : String(academyError);
+    const message = raw.includes("academy name required") ? "Ingresá el nombre de tu academia" : raw;
     redirect(`/login?mode=register&error=${encodeURIComponent(message)}&next=${encodeURIComponent(next)}`);
   }
   redirect(next);

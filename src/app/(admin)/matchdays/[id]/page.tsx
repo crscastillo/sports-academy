@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Button, Card, Field, Input, PageHeader, Select, Stat } from "@/components/ui";
 import { AutoSubmitForm, ConfirmSubmit, ShareLink, SubmitButton } from "@/components/client";
 import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
@@ -20,29 +20,23 @@ type Bus = {
 
 export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const [{ data: md }, { data: matches }, { data: teams }, { data: buses }, { data: lists }, { data: transport }, { data: coaches }] = await Promise.all([
-    supabase.from("matchdays").select("*").eq("id", id).single(),
-    supabase
-      .from("matches")
-      .select(`id, opponent, start_time, court, score_for, score_against, notes,
-        team:teams(id, name, category, gender, team_players(player:players(id, first_name, last_name, jersey_number, active))),
-        callups(id, status, guest_note, responded_at, attended, player:players(id, first_name, last_name, jersey_number, guardian_phone))`)
-      .eq("matchday_id", id)
-      .order("start_time", { nullsFirst: false }),
-    supabase.from("teams").select("id, name, category, gender").order("category"),
-    supabase.from("bus_trips").select("*").eq("matchday_id", id).order("departure_time"),
-    supabase.from("donation_lists").select("id, title").eq("matchday_id", id),
-    supabase.from("matchday_transport").select("player_id, transport").eq("matchday_id", id),
-    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
+  const { matchdays, teams: teamsRepo, coaches: coachesRepo } = await getRepositories();
+  const [md, matches, teamOptions, buses, lists, transport, coaches] = await Promise.all([
+    matchdays.getById(id),
+    matchdays.getMatches(id),
+    teamsRepo.listBasic(),
+    matchdays.getBusTrips(id),
+    matchdays.getDonationLists(id),
+    matchdays.getTransport(id),
+    coachesRepo.listForAssignment(),
   ]);
   if (!md) notFound();
   const matchday = md as Matchday;
-  const rows = (matches ?? []) as unknown as MatchRow[];
-  const trips = (buses ?? []) as Bus[];
-  const transportByPlayer = new Map((transport ?? []).map((t) => [t.player_id, t.transport as string | null]));
-  const assignedCoach = coaches?.find((c) => c.id === matchday.coach_id);
-  const defaultCoach = coaches?.find((c) => c.is_default);
+  const rows = matches as unknown as MatchRow[];
+  const trips = buses as Bus[];
+  const transportByPlayer = new Map(transport.map((t) => [t.player_id, t.transport as string | null]));
+  const assignedCoach = coaches.find((c) => c.id === matchday.coach_id);
+  const defaultCoach = coaches.find((c) => c.is_default);
   const effectiveCoach = assignedCoach ?? defaultCoach ?? null;
 
   // Unique players across all matches of the day — one attendance/transport reading per player.
@@ -72,7 +66,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
             <Field label="Equipo / categoría">
               <Select name="team_id" required defaultValue="">
                 <option value="" disabled>Seleccionar…</option>
-                {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.category} {genderLabel(t.gender)})</option>)}
+                {teamOptions.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.category} {genderLabel(t.gender)})</option>)}
               </Select>
             </Field>
             <Field label="Rival"><Input name="opponent" required placeholder="Club rival" /></Field>
@@ -184,7 +178,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
   const sodaContent = (
     <Card title="Soda y ventas">
-      {lists?.length ? (
+      {lists.length ? (
         <ul className="space-y-1 text-sm">
           {lists.map((l) => <li key={l.id}><Link href={`/donations/${l.id}`} className="text-primary hover:underline">{l.title}</Link></li>)}
         </ul>
@@ -249,7 +243,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
         <div className="space-y-6">
           <Card title="Editar jornada">
-            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} coaches={coaches ?? []} submitLabel="Guardar" />
+            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} coaches={coaches} submitLabel="Guardar" />
           </Card>
 
           <Card title="Link de convocatoria para padres">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Empty, LinkButton, PageHeader } from "@/components/ui";
 import { formatDate, todayISO } from "@/lib/labels";
 
@@ -48,13 +48,12 @@ function MatchdayCard({ m, defaultCoachName }: { m: Row; defaultCoachName: strin
 }
 
 export default async function MatchdaysPage() {
-  const supabase = await createClient();
+  const { matchdays, coaches } = await getRepositories();
   const today = todayISO();
-  const select = "id, title, date, venue, address, is_home, coach:coaches(full_name), matches(id, team:teams(category), callups(status, player_id)), matchday_transport(player_id, transport)";
-  const [{ data: upcoming }, { data: past }, { data: defaultCoach }] = await Promise.all([
-    supabase.from("matchdays").select(select).gte("date", today).order("date"),
-    supabase.from("matchdays").select(select).lt("date", today).order("date", { ascending: false }).limit(20),
-    supabase.from("coaches").select("full_name").eq("is_default", true).maybeSingle(),
+  const [upcoming, past, defaultCoach] = await Promise.all([
+    matchdays.listUpcomingCards(today),
+    matchdays.listPastCards(today, 20),
+    coaches.getDefault(),
   ]);
   const defaultCoachName = defaultCoach?.full_name ?? null;
 
@@ -62,12 +61,12 @@ export default async function MatchdaysPage() {
     <>
       <PageHeader title="Jornadas" subtitle="Partidos, convocatorias y transporte" action={<LinkButton href="/matchdays/new">+ Nueva jornada</LinkButton>} />
       <h2 className="mb-3 font-semibold">Próximas</h2>
-      {!upcoming?.length ? (
+      {!upcoming.length ? (
         <Empty>No hay jornadas programadas.</Empty>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">{(upcoming as unknown as Row[]).map((m) => <MatchdayCard key={m.id} m={m} defaultCoachName={defaultCoachName} />)}</div>
       )}
-      {!!past?.length && (
+      {!!past.length && (
         <>
           <h2 className="mb-3 mt-8 font-semibold">Anteriores</h2>
           <div className="grid gap-3 opacity-90 md:grid-cols-2">{(past as unknown as Row[]).map((m) => <MatchdayCard key={m.id} m={m} defaultCoachName={defaultCoachName} />)}</div>

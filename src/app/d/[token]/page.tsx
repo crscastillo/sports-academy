@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { formatDate } from "@/lib/labels";
 import { DonationBoard, type GuestItem } from "./donation-board";
 
@@ -14,8 +14,8 @@ type Data = {
 export default async function GuestDonationPage({ params }: PageProps<"/d/[token]">) {
   const { token } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(token)) notFound();
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("guest_get_donation_list", { p_token: token });
+  const { donations } = await getRepositories();
+  const data = await donations.guestGetList(token);
   if (!data) notFound();
   const d = data as Data;
 

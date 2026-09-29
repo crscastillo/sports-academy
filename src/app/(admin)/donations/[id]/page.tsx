@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getRepositories } from "@/lib/repositories";
 import { Badge, Card, Field, Input, PageHeader, Select } from "@/components/ui";
 import { ConfirmSubmit, ShareLink, SubmitButton } from "@/components/client";
 import { DONATION_KINDS, donationKindLabel, formatDate } from "@/lib/labels";
@@ -15,18 +15,14 @@ type Item = {
 
 export default async function DonationListPage({ params }: PageProps<"/donations/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const [{ data: list }, { data: itemsData }, { data: homeDays }] = await Promise.all([
-    supabase.from("donation_lists").select("*, matchday:matchdays(id, date, venue)").eq("id", id).single(),
-    supabase
-      .from("donation_items")
-      .select("id, name, kind, quantity_needed, unit, notes, sort_order, donation_pledges(id, parent_name, player_name, phone, quantity, note)")
-      .eq("list_id", id)
-      .order("kind").order("sort_order").order("name"),
-    supabase.from("matchdays").select("id, title, date, venue").eq("is_home", true).order("date", { ascending: false }).limit(30),
+  const { donations } = await getRepositories();
+  const [list, itemsData, homeDays] = await Promise.all([
+    donations.getById(id),
+    donations.getItems(id),
+    donations.listLinkableMatchdays(false),
   ]);
   if (!list) notFound();
-  const items = (itemsData ?? []) as unknown as Item[];
+  const items = itemsData as unknown as Item[];
 
   return (
     <>
