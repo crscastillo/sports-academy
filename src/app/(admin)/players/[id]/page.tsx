@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
-import { ageAchievedThisYear, ageOn, CALLUP_STATUS, categoryAgeCap, formatDate } from "@/lib/labels";
+import { ageOn, CALLUP_STATUS, formatDate } from "@/lib/labels";
+import { isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { deletePlayer, updatePlayer } from "../actions";
 import { PlayerForm, type Player } from "../player-form";
 
@@ -32,17 +33,8 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
-  // A player is eligible for a category if its cap is at least the age they achieve this
-  // calendar year: turning 13 this year means U13+; having turned 13 last year means U14+.
-  const age = ageAchievedThisYear(p.birth_date);
   const selectedTeamIds = (links ?? []).map((l) => l.team_id);
-  const eligibleTeams = (teams ?? []).filter((t) => {
-    if (selectedTeamIds.includes(t.id)) return true;
-    const cap = categoryAgeCap(t.category);
-    const ageOk = cap == null || age == null || cap >= age;
-    const genderOk = !p.gender || t.gender === "mixed" || t.gender === p.gender;
-    return ageOk && genderOk;
-  });
+  const eligibleTeams = (teams ?? []).filter((t) => selectedTeamIds.includes(t.id) || isPlayerEligibleForTeam(p, t));
 
   return (
     <>

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, Empty, PageHeader } from "@/components/ui";
 import { ConfirmSubmit, SubmitButton } from "@/components/client";
-import { ageAchievedThisYear, ageOn, categoryAgeCap, genderLabel } from "@/lib/labels";
+import { ageOn, genderLabel } from "@/lib/labels";
+import { isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { addPlayersToTeam, deleteTeam, removePlayerFromTeam, updateTeam } from "../actions";
 import { TeamForm, type Team } from "../team-form";
 
@@ -31,12 +32,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
     (a.jersey_number ?? 999) - (b.jersey_number ?? 999) || a.last_name.localeCompare(b.last_name),
   );
   const memberIds = new Set(members.map((m) => m.id));
-  const maxAge = categoryAgeCap(team.category);
-  const available = ((allPlayers ?? []) as P[]).filter((p) => {
-    if (memberIds.has(p.id)) return false;
-    const age = ageAchievedThisYear(p.birth_date);
-    return maxAge == null || age == null || age + 1 <= maxAge;
-  });
+  const available = ((allPlayers ?? []) as P[]).filter((p) => !memberIds.has(p.id) && isPlayerEligibleForTeam(p, team));
 
   return (
     <>
