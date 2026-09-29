@@ -8,7 +8,7 @@ export const metadata = { title: "Ingresar" };
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : null;
-  const next = typeof sp.next === "string" ? sp.next : "/dashboard";
+  const next = typeof sp.next === "string" ? sp.next : "";
   const isRegister = sp.mode === "register";
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
@@ -27,6 +27,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <form action={registerWithPassword} className="space-y-3">
             <input type="hidden" name="next" value={next} />
             <Field label="Nombre de la academia" hint="Dejalo vacío si ya te invitaron a una academia"><Input name="academy_name" autoComplete="organization" /></Field>
+            <Field label="Identificador de la academia" hint="Se usa en tus enlaces — ej: mi-academia. Dejalo vacío para generarlo automáticamente.">
+              <Input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" minLength={3} maxLength={40} placeholder="mi-academia" />
+            </Field>
             <Field label="Tu nombre"><Input name="full_name" autoComplete="name" /></Field>
             <Field label="Correo"><Input type="email" name="email" required autoComplete="email" /></Field>
             <Field label="Contraseña"><Input type="password" name="password" required autoComplete="new-password" minLength={8} /></Field>

@@ -1,0 +1,86 @@
+import { revalidatePath } from "next/cache";
+import { getRepositories } from "@/lib/repositories";
+import { createClient } from "@/lib/supabase/server";
+import { paths } from "@/lib/paths";
+import { Card, Field, Input, PageHeader } from "@/components/ui";
+import { AutoSubmitForm, ShareLink, SubmitButton } from "@/components/client";
+import { bool, str } from "@/lib/form";
+
+export const metadata = { title: "Personal" };
+
+async function setAcademyPublic(fd: FormData) {
+  "use server";
+  const { academy } = await getRepositories();
+  await academy.updateVisibility(bool(fd, "is_public"));
+  revalidatePath(paths.staff.list(await academy.getSlug()));
+}
+
+async function addStaff(fd: FormData) {
+  "use server";
+  const email = str(fd, "email")?.toLowerCase();
+  if (!email) return;
+  const { staff, academy } = await getRepositories();
+  await staff.add(email, str(fd, "full_name"));
+  revalidatePath(paths.staff.list(await academy.getSlug()));
+}
+
+async function removeStaff(email: string) {
+  "use server";
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.email?.toLowerCase() === email.toLowerCase()) throw new Error("No podés quitarte a vos mismo.");
+  const { staff, academy } = await getRepositories();
+  await staff.remove(email);
+  revalidatePath(paths.staff.list(await academy.getSlug()));
+}
+
+export default async function StaffPage() {
+  const { staff, academy } = await getRepositories();
+  const [staffList, settings] = await Promise.all([staff.list(), academy.getSettings()]);
+  return (
+    <>
+      <PageHeader title="Personal" subtitle="Entrenadores y administradores con acceso a la app" />
+
+      {settings && (
+        <Card title="Página pública de la academia" className="mb-6">
+          <p className="mb-3 text-sm text-muted-foreground">
+            Una página de solo lectura con las jornadas próximas y los resultados anteriores. No muestra atletas ni datos de contacto.
+          </p>
+          <AutoSubmitForm action={setAcademyPublic} className="mb-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="is_public" defaultChecked={settings.is_public} className="accent-[var(--brand)]" />
+              Página pública activa
+            </label>
+          </AutoSubmitForm>
+          {settings.is_public && <ShareLink path={`/a/${settings.slug}`} label="Copiar link" />}
+        </Card>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card title="Con acceso" className="lg:col-span-2">
+          <ul className="divide-y divide-border">
+            {staffList.map((s) => (
+              <li key={s.email} className="flex items-center justify-between py-2 text-sm">
+                <span>
+                  <span className="font-medium">{s.full_name ?? s.email}</span>
+                  {s.full_name && <span className="text-muted-foreground"> · {s.email}</span>}
+                </span>
+                <form action={removeStaff.bind(null, s.email)}>
+                  <button className="text-xs text-muted-foreground hover:text-red-600">Quitar</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </Card>
+        <Card title="Agregar persona">
+          <form action={addStaff} className="space-y-3">
+            <Field label="Correo"><Input type="email" name="email" required /></Field>
+            <Field label="Nombre"><Input name="full_name" /></Field>
+            <SubmitButton>Dar acceso</SubmitButton>
+            <p className="text-xs text-muted-foreground">La persona se registra con ese correo y una contraseña en la página de ingreso.</p>
+          </form>
+        </Card>
+      </div>
+    </>
+  );
+}
