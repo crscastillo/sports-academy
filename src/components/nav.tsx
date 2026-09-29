@@ -11,6 +11,7 @@ import {
   Dumbbell,
   CalendarDays,
   HandCoins,
+  Wallet,
   IdCard,
   Settings,
   Menu,
@@ -19,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
-const LINKS = [
+const BASE_LINKS = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
   { href: "/teams", label: "Equipos", icon: ShieldHalf },
   { href: "/players", label: "Atletas", icon: UserRound },
@@ -27,6 +28,9 @@ const LINKS = [
   { href: "/trainings", label: "Entrenamientos", icon: Dumbbell },
   { href: "/matchdays", label: "Jornadas", icon: CalendarDays },
   { href: "/donations", label: "Donaciones", icon: HandCoins },
+];
+const PAYMENTS_LINK = { href: "/payments", label: "Pagos", icon: Wallet };
+const TAIL_LINKS = [
   { href: "/staff", label: "Personal", icon: IdCard },
   { href: "/settings", label: "Configuración", icon: Settings },
 ];
@@ -40,10 +44,10 @@ function Brand() {
   );
 }
 
-function NavLinks({ active, onNavigate }: { active: (href: string) => boolean; onNavigate?: () => void }) {
+function NavLinks({ links, active, onNavigate }: { links: typeof BASE_LINKS; active: (href: string) => boolean; onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-0.5">
-      {LINKS.map((l) => {
+      {links.map((l) => {
         const Icon = l.icon;
         return (
           <Link
@@ -64,10 +68,11 @@ function NavLinks({ active, onNavigate }: { active: (href: string) => boolean; o
   );
 }
 
-export function Nav({ email }: { email: string }) {
+export function Nav({ email, showPayments = false }: { email: string; showPayments?: boolean }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const active = (h: string) => path === h || path.startsWith(h + "/");
+  const links = [...BASE_LINKS, ...(showPayments ? [PAYMENTS_LINK] : []), ...TAIL_LINKS];
 
   return (
     <>
@@ -77,7 +82,7 @@ export function Nav({ email }: { email: string }) {
           <Brand />
         </div>
         <div className="flex-1 overflow-y-auto">
-          <NavLinks active={active} />
+          <NavLinks links={links} active={active} />
         </div>
         <div className="mt-4 border-t border-border px-1 pt-3">
           <p className="truncate text-xs text-muted-foreground">{email}</p>
@@ -105,7 +110,7 @@ export function Nav({ email }: { email: string }) {
             <Brand />
           </SheetHeader>
           <div className="flex-1 overflow-y-auto">
-            <NavLinks active={active} onNavigate={() => setOpen(false)} />
+            <NavLinks links={links} active={active} onNavigate={() => setOpen(false)} />
           </div>
           <div className="mt-4 border-t border-border px-1 pt-3">
             <p className="truncate text-xs text-muted-foreground">{email}</p>

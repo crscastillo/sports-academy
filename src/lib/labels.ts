@@ -67,6 +67,28 @@ export const DONATION_KINDS = [
 export const donationKindLabel = (k?: string | null) =>
   DONATION_KINDS.find((x) => x.value === k)?.label ?? "—";
 
+export const PAYMENT_STATUS = [
+  { value: "pending", label: "Pendiente" },
+  { value: "paid", label: "Pagado" },
+  { value: "waived", label: "Exonerado" },
+] as const;
+
+export const paymentStatusLabel = (s?: string | null) =>
+  PAYMENT_STATUS.find((x) => x.value === s)?.label ?? "—";
+
+export function monthStart(iso: string) {
+  return iso.slice(0, 7) + "-01";
+}
+export function shiftMonth(iso: string, delta: number) {
+  const [y, m] = iso.slice(0, 7).split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return d.toISOString().slice(0, 10);
+}
+export function monthLabel(iso: string) {
+  const [y, m] = iso.slice(0, 7).split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("es-CR", { month: "long", year: "numeric" });
+}
+
 export function formatDate(d?: string | null, opts?: Intl.DateTimeFormatOptions) {
   if (!d) return "—";
   const [y, m, day] = d.slice(0, 10).split("-").map(Number);

@@ -24,9 +24,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
     );
   }
 
+  const { data: academy } = await supabase.from("academies").select("track_payments").single();
+
   return (
     <div className="md:flex">
-      <Nav email={user.email ?? ""} />
+      <Nav email={user.email ?? ""} showPayments={academy?.track_payments ?? false} />
       <div className="min-w-0 flex-1">
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
       </div>
