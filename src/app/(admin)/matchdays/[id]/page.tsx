@@ -182,6 +182,21 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
     </Card>
   );
 
+  const sodaContent = (
+    <Card title="Soda y ventas">
+      {lists?.length ? (
+        <ul className="space-y-1 text-sm">
+          {lists.map((l) => <li key={l.id}><Link href={`/donations/${l.id}`} className="text-primary hover:underline">{l.title}</Link></li>)}
+        </ul>
+      ) : (
+        <form action={createDonationListForMatchday.bind(null, id)}>
+          <p className="mb-2 text-sm text-muted-foreground">Creá la lista de donaciones para que los padres se anoten.</p>
+          <SubmitButton variant="secondary">Crear lista de donaciones</SubmitButton>
+        </form>
+      )}
+    </Card>
+  );
+
   return (
     <>
       <PageHeader
@@ -214,39 +229,28 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          {matchday.is_home ? (
-            partidosContent
-          ) : (
-            <Tabs defaultValue="partidos">
-              <TabsList>
-                <TabsTrigger value="partidos">Partidos</TabsTrigger>
+          <Tabs defaultValue="partidos">
+            <TabsList>
+              <TabsTrigger value="partidos">Partidos</TabsTrigger>
+              {matchday.is_home ? (
+                <TabsTrigger value="donaciones">Donaciones</TabsTrigger>
+              ) : (
                 <TabsTrigger value="transporte">Transporte</TabsTrigger>
-              </TabsList>
-              <TabsContent value="partidos" className="pt-4">{partidosContent}</TabsContent>
+              )}
+            </TabsList>
+            <TabsContent value="partidos" className="pt-4">{partidosContent}</TabsContent>
+            {matchday.is_home ? (
+              <TabsContent value="donaciones" className="pt-4">{sodaContent}</TabsContent>
+            ) : (
               <TabsContent value="transporte" className="pt-4">{transporteContent}</TabsContent>
-            </Tabs>
-          )}
+            )}
+          </Tabs>
         </div>
 
         <div className="space-y-6">
           <Card title="Editar jornada">
             <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} coaches={coaches ?? []} submitLabel="Guardar" />
           </Card>
-
-          {matchday.is_home && (
-            <Card title="Soda y ventas">
-              {lists?.length ? (
-                <ul className="space-y-1 text-sm">
-                  {lists.map((l) => <li key={l.id}><Link href={`/donations/${l.id}`} className="text-primary hover:underline">{l.title}</Link></li>)}
-                </ul>
-              ) : (
-                <form action={createDonationListForMatchday.bind(null, id)}>
-                  <p className="mb-2 text-sm text-muted-foreground">Creá la lista de donaciones para que los padres se anoten.</p>
-                  <SubmitButton variant="secondary">Crear lista de donaciones</SubmitButton>
-                </form>
-              )}
-            </Card>
-          )}
 
           <Card title="Link de convocatoria para padres">
             <p className="mb-3 text-sm text-muted-foreground">

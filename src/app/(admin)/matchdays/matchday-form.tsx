@@ -33,10 +33,21 @@ export function MatchdayForm({
         </Select>
       </Field>
       <Field label="Notas" className="sm:col-span-2"><Textarea name="notes" rows={2} defaultValue={matchday?.notes ?? ""} placeholder="Uniforme blanco, llegar 45 min antes…" /></Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="is_home" defaultChecked={matchday?.is_home} className="accent-[var(--brand)]" />
-        Jornada en casa (habilita soda y ventas, oculta transporte)
-      </label>
+      <Field label="Tipo de jornada" className="sm:col-span-2">
+        <div className="flex gap-2">
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:font-semibold has-[:checked]:text-primary">
+            <input type="radio" name="is_home" value="false" defaultChecked={!matchday?.is_home} className="sr-only" />
+            🚗 Visita
+          </label>
+          <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:font-semibold has-[:checked]:text-primary">
+            <input type="radio" name="is_home" value="true" defaultChecked={matchday?.is_home} className="sr-only" />
+            🏠 En casa
+          </label>
+        </div>
+        <span className="mt-1 block text-xs font-normal normal-case tracking-normal text-muted-foreground">
+          En casa habilita soda y ventas; visita habilita transporte.
+        </span>
+      </Field>
       <div className="sm:col-span-2"><SubmitButton>{submitLabel}</SubmitButton></div>
     </form>
   );

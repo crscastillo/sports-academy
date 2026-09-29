@@ -17,11 +17,13 @@ export type MatchRow = {
 };
 
 export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchdayId: string }) {
+  const byJersey = (a: PlayerLite, b: PlayerLite) => (a.jersey_number ?? 999) - (b.jersey_number ?? 999) || a.last_name.localeCompare(b.last_name);
   const called = new Set(m.callups.map((c) => c.player.id));
-  const notCalled = (m.team?.team_players ?? []).map((tp) => tp.player).filter((p) => p && p.active && !called.has(p.id));
-  const callups = [...m.callups].sort(
-    (a, b) => (a.player.jersey_number ?? 999) - (b.player.jersey_number ?? 999) || a.player.last_name.localeCompare(b.player.last_name),
-  );
+  const notCalled = (m.team?.team_players ?? [])
+    .map((tp) => tp.player)
+    .filter((p) => p && p.active && !called.has(p.id))
+    .sort(byJersey);
+  const callups = [...m.callups].sort((a, b) => byJersey(a.player, b.player));
   const conf = callups.filter((c) => c.status === "confirmed").length;
 
   return (

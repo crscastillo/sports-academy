@@ -15,6 +15,8 @@ export type GuestMatch = {
 export type GuestPlayer = { player_id: string; player_name: string; jersey_number: number | null; transport: string | null };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// "First Last" strings sort the same as (first_name, last_name) since first_name is the prefix.
+const byName = <T extends { player_name: string }>(a: T, b: T) => a.player_name.localeCompare(b.player_name);
 
 function StatusPill({ status }: { status: string }) {
   if (status === "confirmed")
@@ -128,14 +130,16 @@ export function CallupBoard({ token, matches, players, isHome }: { token: string
 
   const nq = norm(q.trim());
   const filteredMatches = useMemo(() => {
-    if (!nq) return matches;
-    return matches
+    const withSortedCallups = matches.map((m) => ({ ...m, callups: [...m.callups].sort(byName) }));
+    if (!nq) return withSortedCallups;
+    return withSortedCallups
       .map((m) => ({ ...m, callups: m.callups.filter((c) => norm(c.player_name).includes(nq)) }))
       .filter((m) => m.callups.length > 0);
   }, [nq, matches]);
   const filteredPlayers = useMemo(() => {
-    if (!nq) return players;
-    return players.filter((p) => norm(p.player_name).includes(nq));
+    const sorted = [...players].sort(byName);
+    if (!nq) return sorted;
+    return sorted.filter((p) => norm(p.player_name).includes(nq));
   }, [nq, players]);
 
   return (
