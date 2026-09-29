@@ -32,13 +32,14 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
-  // A player who turns 14 this year is eligible for U14 (cap >= age) but not U13.
+  // A player is eligible for their own age (achieved this calendar year) or one bracket
+  // younger: a player turning 13 this year can play U13 or U12, but not U11.
   const age = ageAchievedThisYear(p.birth_date);
   const selectedTeamIds = (links ?? []).map((l) => l.team_id);
   const eligibleTeams = (teams ?? []).filter((t) => {
     if (selectedTeamIds.includes(t.id)) return true;
     const cap = categoryAgeCap(t.category);
-    const ageOk = cap == null || age == null || cap >= age;
+    const ageOk = cap == null || age == null || cap >= age - 1;
     const genderOk = !p.gender || t.gender === "mixed" || t.gender === p.gender;
     return ageOk && genderOk;
   });
