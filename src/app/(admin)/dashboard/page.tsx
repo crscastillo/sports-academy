@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, Empty, LinkButton, PageHeader, Stat } from "@/components/ui";
+import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatTime, shiftDate, todayISO } from "@/lib/labels";
 
 type Md = {
@@ -19,7 +20,7 @@ export default async function Dashboard() {
   const supabase = await createClient();
   const today = todayISO();
   const weekAgo = shiftDate(today, -7);
-  const [{ count: players }, { count: teams }, { data: mds }, { data: trs }, { data: res }] = await Promise.all([
+  const [{ count: players }, { count: teams }, { data: mds }, { data: trs }, { data: res }, { data: academy }] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("active", true),
     supabase.from("teams").select("id", { count: "exact", head: true }),
     supabase
@@ -36,6 +37,7 @@ export default async function Dashboard() {
       .not("score_for", "is", null)
       .gte("matchday.date", weekAgo).lt("matchday.date", today)
       .order("date", { foreignTable: "matchday", ascending: false }),
+    supabase.from("academies").select("slug, is_public").single(),
   ]);
   const matchdays = (mds ?? []) as unknown as Md[];
   const trainings = (trs ?? []) as unknown as Tr[];
@@ -43,7 +45,19 @@ export default async function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Inicio" subtitle={formatDate(today, { weekday: "long" })} />
+      <PageHeader
+        title="Inicio"
+        subtitle={formatDate(today, { weekday: "long" })}
+        action={
+          academy?.is_public && academy.slug ? (
+            <a href={`/a/${academy.slug}`} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", className: "h-9 px-3.5" })}>
+              🌐 Página pública
+            </a>
+          ) : (
+            <Link href="/staff" className="text-sm text-muted-foreground hover:underline">Activar página pública</Link>
+          )
+        }
+      />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Atletas activos" value={players ?? 0} />
         <Stat label="Equipos" value={teams ?? 0} />
