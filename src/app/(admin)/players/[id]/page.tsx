@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
-import { ageOn, CALLUP_STATUS, categoryAgeCap, formatDate } from "@/lib/labels";
+import { ageAchievedThisYear, ageOn, CALLUP_STATUS, categoryAgeCap, formatDate } from "@/lib/labels";
 import { deletePlayer, updatePlayer } from "../actions";
 import { PlayerForm, type Player } from "../player-form";
 
@@ -32,12 +32,13 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
-  const age = ageOn(p.birth_date);
+  // A player who turns 14 this year is eligible for U14 (cap >= age) but not U13.
+  const age = ageAchievedThisYear(p.birth_date);
   const selectedTeamIds = (links ?? []).map((l) => l.team_id);
   const eligibleTeams = (teams ?? []).filter((t) => {
     if (selectedTeamIds.includes(t.id)) return true;
     const cap = categoryAgeCap(t.category);
-    const ageOk = cap == null || age == null || cap >= age - 1;
+    const ageOk = cap == null || age == null || cap >= age;
     const genderOk = !p.gender || t.gender === "mixed" || t.gender === p.gender;
     return ageOk && genderOk;
   });
