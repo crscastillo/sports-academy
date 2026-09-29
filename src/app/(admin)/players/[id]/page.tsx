@@ -32,8 +32,8 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
-  // A player is eligible for a category if its cap is at least the age they achieve
-  // this calendar year: a player turning 11 this year can play U11 but not U10.
+  // A player is eligible for a category if its cap is at least the age they achieve this
+  // calendar year: turning 13 this year means U13+; having turned 13 last year means U14+.
   const age = ageAchievedThisYear(p.birth_date);
   const selectedTeamIds = (links ?? []).map((l) => l.team_id);
   const eligibleTeams = (teams ?? []).filter((t) => {
