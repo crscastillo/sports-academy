@@ -1,6 +1,6 @@
 import { Field, Input, Select } from "@/components/ui";
 import { SubmitButton } from "@/components/client";
-import { GENDERS } from "@/lib/labels";
+import { CATEGORIES, GENDERS } from "@/lib/labels";
 
 export type Team = {
   id: string;
@@ -22,12 +22,12 @@ export function TeamForm({
         <Input name="name" required defaultValue={team?.name} placeholder="Ej. U13 Femenino A" />
       </Field>
       <Field label="Categoría">
-        <Input name="category" required defaultValue={team?.category} placeholder="U13" list="categories" />
-        <datalist id="categories">
-          {["U9", "U11", "U13", "U15", "U17", "U19", "Mayor"].map((c) => (
-            <option key={c} value={c} />
+        <Select name="category" required defaultValue={team?.category ?? ""}>
+          <option value="" disabled>Elegir categoría</option>
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
           ))}
-        </datalist>
+        </Select>
       </Field>
       <Field label="Género">
         <Select name="gender" defaultValue={team?.gender ?? "mixed"}>

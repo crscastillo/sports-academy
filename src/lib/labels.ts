@@ -13,6 +13,14 @@ export const COACH_TYPES = [
 export const coachTypeLabel = (t?: string | null) =>
   COACH_TYPES.find((x) => x.value === t)?.label ?? "—";
 
+export const CATEGORIES = [
+  ...Array.from({ length: 17 }, (_, i) => `U${i + 8}`), // U8..U24
+  "Juegos Nacionales",
+  "2da",
+  "1era",
+  "Master",
+] as const;
+
 export const genderLabel = (g?: string | null) =>
   GENDERS.find((x) => x.value === g)?.label ?? "—";
 
