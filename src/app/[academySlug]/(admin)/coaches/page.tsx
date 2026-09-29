@@ -46,7 +46,7 @@ export default async function CoachesPage({ params, searchParams }: PageProps<"/
         }
       />
       <div className="mb-4">
-        <FilterPills options={[{ value: "", label: "Todos" }, ...COACH_TYPES]} value={type} hrefFor={(v) => (v ? `${paths.coaches.list(academySlug)}?type=${v}` : paths.coaches.list(academySlug))} />
+        <FilterPills options={[{ value: "", label: "Todos" }, ...COACH_TYPES]} value={type} basePath={paths.coaches.list(academySlug)} param="type" />
       </div>
 
       {!coachRows.length ? (

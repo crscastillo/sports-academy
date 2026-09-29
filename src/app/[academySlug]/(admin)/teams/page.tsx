@@ -30,7 +30,7 @@ export default async function TeamsPage({ params, searchParams }: PageProps<"/[a
         }
       />
       <div className="mb-4">
-        <FilterPills options={[{ value: "", label: "Todos" }, ...GENDERS]} value={gender} hrefFor={(v) => (v ? `${paths.teams.list(academySlug)}?gender=${v}` : paths.teams.list(academySlug))} />
+        <FilterPills options={[{ value: "", label: "Todos" }, ...GENDERS]} value={gender} basePath={paths.teams.list(academySlug)} param="gender" />
       </div>
       {!teamRows.length ? (
         <Empty>Aún no hay equipos.</Empty>
