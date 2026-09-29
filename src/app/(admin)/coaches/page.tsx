@@ -1,14 +1,22 @@
-import { Badge, Card, Empty, Field, Input, PageHeader } from "@/components/ui";
+import Link from "next/link";
+import { Badge, Button, Card, Empty, Field, Input, PageHeader, Select } from "@/components/ui";
 import { ConfirmSubmit, SubmitButton } from "@/components/client";
+import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
 import { createClient } from "@/lib/supabase/server";
+import { COACH_TYPES, coachTypeLabel } from "@/lib/labels";
 import { createCoach, deleteCoach, inviteCoach, updateCoach } from "./actions";
 
 export const metadata = { title: "Entrenadores" };
 
-export default async function CoachesPage() {
+export default async function CoachesPage({ searchParams }: PageProps<"/coaches">) {
+  const sp = await searchParams;
+  const type = typeof sp.type === "string" ? sp.type : "";
+
   const supabase = await createClient();
+  let query = supabase.from("coaches").select("id, full_name, email, phone, type").order("full_name");
+  if (type) query = query.eq("type", type);
   const [{ data: coaches }, { data: staff }, { data: teams }] = await Promise.all([
-    supabase.from("coaches").select("id, full_name, email, phone").order("full_name"),
+    query,
     supabase.from("staff").select("email"),
     supabase.from("teams").select("name, coach_id"),
   ]);
@@ -22,17 +30,36 @@ export default async function CoachesPage() {
 
   return (
     <>
-      <PageHeader title="Entrenadores" subtitle="Personal técnico y acceso a la plataforma" />
-      <Card title="Nuevo entrenador" className="mb-6">
-        <form action={createCoach} className="grid gap-3 sm:grid-cols-3">
-          <Field label="Nombre"><Input name="full_name" required /></Field>
-          <Field label="Correo" hint="Necesario para invitarlo"><Input type="email" name="email" /></Field>
-          <Field label="Teléfono"><Input name="phone" /></Field>
-          <div className="sm:col-span-3">
-            <SubmitButton>Agregar entrenador</SubmitButton>
-          </div>
-        </form>
-      </Card>
+      <PageHeader
+        title="Entrenadores"
+        subtitle="Personal técnico y acceso a la plataforma"
+        action={
+          <ResponsiveDialog trigger={<Button>+ Nuevo entrenador</Button>} title="Nuevo entrenador">
+            <form action={createCoach} className="grid gap-3">
+              <Field label="Nombre"><Input name="full_name" required /></Field>
+              <Field label="Tipo">
+                <Select name="type" defaultValue="head">
+                  {COACH_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </Select>
+              </Field>
+              <Field label="Correo" hint="Necesario para invitarlo"><Input type="email" name="email" /></Field>
+              <Field label="Teléfono"><Input name="phone" /></Field>
+              <SubmitButton>Agregar entrenador</SubmitButton>
+            </form>
+          </ResponsiveDialog>
+        }
+      />
+      <div className="mb-4 flex flex-wrap gap-1">
+        {[{ value: "", label: "Todos" }, ...COACH_TYPES].map((t) => (
+          <Link
+            key={t.value}
+            href={t.value ? `/coaches?type=${t.value}` : "/coaches"}
+            className={`rounded-lg px-3 py-1.5 text-sm ${type === t.value ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
 
       {!coaches?.length ? (
         <Empty>Aún no hay entrenadores.</Empty>
@@ -46,13 +73,21 @@ export default async function CoachesPage() {
                 <form action={updateCoach.bind(null, c.id)} className="grid gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <Field label="Nombre" className="flex-1"><Input name="full_name" required defaultValue={c.full_name} /></Field>
-                    {invited ? (
-                      <Badge tone="green">Con acceso</Badge>
-                    ) : c.email ? (
-                      <Badge tone="amber">Sin invitar</Badge>
-                    ) : null}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Badge tone="brand">{coachTypeLabel(c.type)}</Badge>
+                      {invited ? (
+                        <Badge tone="green">Con acceso</Badge>
+                      ) : c.email ? (
+                        <Badge tone="amber">Sin invitar</Badge>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Field label="Tipo">
+                      <Select name="type" defaultValue={c.type}>
+                        {COACH_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      </Select>
+                    </Field>
                     <Field label="Correo" hint="Necesario para invitarlo"><Input type="email" name="email" defaultValue={c.email ?? ""} /></Field>
                     <Field label="Teléfono"><Input name="phone" defaultValue={c.phone ?? ""} /></Field>
                   </div>

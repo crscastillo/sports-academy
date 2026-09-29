@@ -4,6 +4,15 @@ export const GENDERS = [
   { value: "mixed", label: "Mixto" },
 ] as const;
 
+export const COACH_TYPES = [
+  { value: "head", label: "Entrenador principal" },
+  { value: "assistant", label: "Asistente" },
+  { value: "young_assistant", label: "Asistente de divisiones menores" },
+] as const;
+
+export const coachTypeLabel = (t?: string | null) =>
+  COACH_TYPES.find((x) => x.value === t)?.label ?? "—";
+
 export const genderLabel = (g?: string | null) =>
   GENDERS.find((x) => x.value === g)?.label ?? "—";
 

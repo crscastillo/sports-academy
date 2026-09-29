@@ -9,6 +9,7 @@ function coachFields(fd: FormData) {
     full_name: str(fd, "full_name") ?? "",
     email: str(fd, "email")?.toLowerCase() ?? null,
     phone: str(fd, "phone"),
+    type: str(fd, "type") ?? "head",
   };
 }
 
