@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, Empty, LinkButton, PageHeader, Stat } from "@/components/ui";
-import { formatDate, formatTime, todayISO } from "@/lib/labels";
+import { formatDate, formatTime, shiftDate, todayISO } from "@/lib/labels";
 
 type Md = {
   id: string; title: string | null; date: string; venue: string; is_home: boolean;
@@ -9,11 +9,17 @@ type Md = {
   matchday_transport: { player_id: string; transport: string | null }[];
 };
 type Tr = { id: string; date: string; start_time: string | null; location: string | null; training_teams: { team: { category: string } | null }[] };
+type Result = {
+  id: string; opponent: string; score_for: number | null; score_against: number | null;
+  team: { name: string; category: string } | null;
+  matchday: { id: string; date: string; title: string | null } | null;
+};
 
 export default async function Dashboard() {
   const supabase = await createClient();
   const today = todayISO();
-  const [{ count: players }, { count: teams }, { data: mds }, { data: trs }] = await Promise.all([
+  const weekAgo = shiftDate(today, -7);
+  const [{ count: players }, { count: teams }, { data: mds }, { data: trs }, { data: res }] = await Promise.all([
     supabase.from("players").select("id", { count: "exact", head: true }).eq("active", true),
     supabase.from("teams").select("id", { count: "exact", head: true }),
     supabase
@@ -24,9 +30,16 @@ export default async function Dashboard() {
       .from("trainings")
       .select("id, date, start_time, location, training_teams(team:teams(category))")
       .gte("date", today).eq("status", "planned").order("date").order("start_time").limit(6),
+    supabase
+      .from("matches")
+      .select("id, opponent, score_for, score_against, team:teams(name, category), matchday:matchdays!inner(id, date, title)")
+      .not("score_for", "is", null)
+      .gte("matchday.date", weekAgo).lt("matchday.date", today)
+      .order("date", { foreignTable: "matchday", ascending: false }),
   ]);
   const matchdays = (mds ?? []) as unknown as Md[];
   const trainings = (trs ?? []) as unknown as Tr[];
+  const results = (res ?? []) as unknown as Result[];
 
   return (
     <>
@@ -92,6 +105,33 @@ export default async function Dashboard() {
           )}
         </Card>
       </div>
+
+      <Card title="Resultados de la semana pasada" className="mt-6">
+        {results.length === 0 ? (
+          <Empty>Sin partidos con resultado registrado en los últimos 7 días.</Empty>
+        ) : (
+          <ul className="divide-y divide-border">
+            {results.map((r) => {
+              const win = r.score_for! > r.score_against!;
+              const loss = r.score_for! < r.score_against!;
+              return (
+                <li key={r.id} className="py-2.5">
+                  <Link href={r.matchday ? `/matchdays/${r.matchday.id}` : "#"} className="flex flex-wrap items-center justify-between gap-2 text-sm hover:underline">
+                    <span>
+                      {r.matchday && <span className="font-semibold text-primary">{formatDate(r.matchday.date, { year: undefined })}</span>}{" "}
+                      {r.team && <Badge tone="brand">{r.team.category}</Badge>}{" "}
+                      {r.team?.name} <span className="text-muted-foreground">vs {r.opponent}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      {r.score_for}–{r.score_against} {win ? "✅" : loss ? "❌" : "➖"}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
     </>
   );
 }

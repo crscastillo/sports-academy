@@ -84,6 +84,10 @@ export function shiftMonth(iso: string, delta: number) {
   const d = new Date(Date.UTC(y, m - 1 + delta, 1));
   return d.toISOString().slice(0, 10);
 }
+export function shiftDate(iso: string, days: number) {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
 export function monthLabel(iso: string) {
   const [y, m] = iso.slice(0, 7).split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("es-CR", { month: "long", year: "numeric" });
