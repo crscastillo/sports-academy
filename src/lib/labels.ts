@@ -90,6 +90,14 @@ export function ageOn(birth?: string | null, on = new Date()) {
   return age;
 }
 
+// Age a player reaches at some point during `on`'s calendar year (birthday-agnostic),
+// which is how youth-sports category cutoffs like "U13" are defined.
+export function ageAchievedThisYear(birth?: string | null, on = new Date()) {
+  if (!birth) return null;
+  const y = Number(birth.slice(0, 4));
+  return Number.isFinite(y) ? on.getFullYear() - y : null;
+}
+
 export function todayISO() {
   const d = new Date();
   const off = d.getTimezoneOffset();
