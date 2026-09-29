@@ -131,12 +131,22 @@ export async function removeCallup(callupId: string, matchdayId: string) {
 export async function setCallupResponse(callupId: string, matchdayId: string, fd: FormData) {
   const status = str(fd, "status") ?? "pending";
   const supabase = await createClient();
+  const { data: callup } = await supabase.from("callups").select("player_id").eq("id", callupId).single();
   must(
     await supabase
       .from("callups")
       .update({ status, responded_at: status === "pending" ? null : new Date().toISOString() })
       .eq("id", callupId),
   );
+  // A specific match's response was just overwritten — a blanket "no voy" no longer applies.
+  if (callup) {
+    await supabase
+      .from("matchday_transport")
+      .update({ transport: null })
+      .eq("matchday_id", matchdayId)
+      .eq("player_id", callup.player_id)
+      .eq("transport", "no_go");
+  }
   refresh(matchdayId);
 }
 
@@ -146,7 +156,8 @@ export async function setAttendance(callupId: string, matchdayId: string, attend
   refresh(matchdayId);
 }
 
-// One transport choice per player per matchday (not per match).
+// One transport choice per player per matchday (not per match). "no_go" also
+// declines every match the player is called up to that day.
 export async function setPlayerTransport(playerId: string, matchdayId: string, fd: FormData) {
   const transport = str(fd, "transport");
   const supabase = await createClient();
@@ -158,6 +169,17 @@ export async function setPlayerTransport(playerId: string, matchdayId: string, f
         { onConflict: "matchday_id,player_id" },
       ),
   );
+  if (transport === "no_go") {
+    const { data: callups } = await supabase
+      .from("callups")
+      .select("id, match:matches!inner(matchday_id)")
+      .eq("player_id", playerId)
+      .eq("match.matchday_id", matchdayId);
+    const ids = (callups ?? []).map((c) => c.id);
+    if (ids.length) {
+      await supabase.from("callups").update({ status: "declined", responded_at: new Date().toISOString() }).in("id", ids);
+    }
+  }
   refresh(matchdayId);
 }
 

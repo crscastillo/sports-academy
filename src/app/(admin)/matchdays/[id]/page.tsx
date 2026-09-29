@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Badge, Card, Field, Input, PageHeader, Select, Stat } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, PageHeader, Select, Stat } from "@/components/ui";
 import { AutoSubmitForm, ConfirmSubmit, ShareLink, SubmitButton } from "@/components/client";
+import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
 import { formatDate, formatTime, genderLabel } from "@/lib/labels";
 import {
   addBusTrip, addMatch, createDonationListForMatchday, deleteBusTrip, deleteMatchday,
@@ -45,8 +46,13 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
   const confirmed = all.filter((c) => c.status === "confirmed");
   const confirmedPlayers = [...new Map(confirmed.map((c) => [c.player.id, c.player])).values()]
     .sort((a, b) => a.last_name.localeCompare(b.last_name));
+  // Everyone called up (not just currently-confirmed), so a player who picked "no voy" —
+  // which declines them everywhere — stays visible here to review or undo.
+  const calledPlayers = [...new Map(all.map((c) => [c.player.id, c.player])).values()]
+    .sort((a, b) => a.last_name.localeCompare(b.last_name));
   const busRiders = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "bus");
   const ownCount = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "own").length;
+  const noGoCount = calledPlayers.filter((p) => transportByPlayer.get(p.id) === "no_go").length;
   const capacity = trips.reduce((s, t) => s + (t.capacity ?? 0), 0);
   const pending = all.filter((c) => c.status === "pending").length;
   const declined = all.filter((c) => c.status === "declined").length;
@@ -54,24 +60,26 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
   const partidosContent = (
     <div className="space-y-6">
-      <Card title="Agregar partido">
-        <form action={addMatch.bind(null, id)} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Equipo / categoría">
-            <Select name="team_id" required defaultValue="">
-              <option value="" disabled>Seleccionar…</option>
-              {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.category} {genderLabel(t.gender)})</option>)}
-            </Select>
-          </Field>
-          <Field label="Rival"><Input name="opponent" required placeholder="Club rival" /></Field>
-          <Field label="Hora"><Input type="time" name="start_time" /></Field>
-          <Field label="Cancha"><Input name="court" placeholder="Cancha 1" /></Field>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" name="call_all" defaultChecked className="accent-[var(--brand)]" />
-            Convocar a todo el plantel del equipo
-          </label>
-          <div className="sm:col-span-2 sm:text-right lg:col-span-2"><SubmitButton>Agregar partido</SubmitButton></div>
-        </form>
-      </Card>
+      <div className="flex justify-end">
+        <ResponsiveDialog trigger={<Button>+ Agregar partido</Button>} title="Agregar partido">
+          <form action={addMatch.bind(null, id)} className="grid gap-3">
+            <Field label="Equipo / categoría">
+              <Select name="team_id" required defaultValue="">
+                <option value="" disabled>Seleccionar…</option>
+                {teams?.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.category} {genderLabel(t.gender)})</option>)}
+              </Select>
+            </Field>
+            <Field label="Rival"><Input name="opponent" required placeholder="Club rival" /></Field>
+            <Field label="Hora"><Input type="time" name="start_time" /></Field>
+            <Field label="Cancha"><Input name="court" placeholder="Cancha 1" /></Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="call_all" defaultChecked className="accent-[var(--brand)]" />
+              Convocar a todo el plantel del equipo
+            </label>
+            <SubmitButton>Agregar partido</SubmitButton>
+          </form>
+        </ResponsiveDialog>
+      </div>
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">Aún no hay partidos en esta jornada.</p>
@@ -122,18 +130,18 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
       <div className="mt-4 border-t border-border pt-3">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span className="font-semibold">Transporte por atleta ({confirmedPlayers.length})</span>
+          <span className="font-semibold">Transporte por atleta ({calledPlayers.length})</span>
           {capacity > 0 && (
             <Badge tone={busRiders.length > capacity ? "red" : "green"}>
               {busRiders.length > capacity ? `Faltan ${busRiders.length - capacity} campos` : `${capacity - busRiders.length} libres`}
             </Badge>
           )}
         </div>
-        {confirmedPlayers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nadie ha confirmado asistencia aún.</p>
+        {calledPlayers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nadie ha sido convocado aún.</p>
         ) : (
           <ul className="space-y-1">
-            {confirmedPlayers.map((p) => (
+            {calledPlayers.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
                 <span>{p.first_name} {p.last_name}</span>
                 <AutoSubmitForm action={setPlayerTransport.bind(null, p.id, id)}>
@@ -141,13 +149,16 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
                     <option value="">Sin definir</option>
                     <option value="bus">🚌 Buseta</option>
                     <option value="own">🚗 Medios propios</option>
+                    <option value="no_go">🚫 No voy (declina todos los partidos)</option>
                   </select>
                 </AutoSubmitForm>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-2 text-xs text-muted-foreground">1 voto por atleta para toda la jornada · {ownCount} llegan por sus propios medios.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          1 voto por atleta para toda la jornada · {ownCount} llegan por sus propios medios{noGoCount > 0 && <> · {noGoCount} no van</>}.
+        </p>
       </div>
     </Card>
   );
@@ -176,14 +187,8 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         )}
       </div>
 
-      <Card title="Link de convocatoria para padres" className="mb-6">
-        <p className="mb-3 text-sm text-muted-foreground">
-          Compartí este enlace: los padres buscan a su atleta, confirman asistencia e indican si usan la buseta o llegan por sus medios. No requiere cuenta.
-        </p>
-        <ShareLink path={`/c/${matchday.share_token}`} label="Copiar link" />
-        <form action={regenerateShareToken.bind(null, id)} className="mt-2">
-          <button className="text-xs text-muted-foreground hover:underline">Generar nuevo link (invalida el anterior)</button>
-        </form>
+      <Card title="Editar jornada" className="mb-6">
+        <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} submitLabel="Guardar" />
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -218,8 +223,14 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
             </Card>
           )}
 
-          <Card title="Editar jornada">
-            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} submitLabel="Guardar" />
+          <Card title="Link de convocatoria para padres">
+            <p className="mb-3 text-sm text-muted-foreground">
+              Compartí este enlace: los padres buscan a su atleta, confirman asistencia e indican si usan la buseta o llegan por sus medios. No requiere cuenta.
+            </p>
+            <ShareLink path={`/c/${matchday.share_token}`} label="Copiar link" />
+            <form action={regenerateShareToken.bind(null, id)} className="mt-2">
+              <button className="text-xs text-muted-foreground hover:underline">Generar nuevo link (invalida el anterior)</button>
+            </form>
           </Card>
           <form action={deleteMatchday.bind(null, id)}>
             <ConfirmSubmit message="¿Eliminar la jornada con todos sus partidos y convocatorias?">Eliminar jornada</ConfirmSubmit>

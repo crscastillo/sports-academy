@@ -21,7 +21,7 @@ export async function respondCallup(
   return { ok: true as const };
 }
 
-export async function setTransport(token: string, playerId: string, transport: "bus" | "own") {
+export async function setTransport(token: string, playerId: string, transport: "bus" | "own" | "no_go") {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("guest_set_transport", {
     p_token: token,

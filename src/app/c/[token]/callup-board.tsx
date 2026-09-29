@@ -60,35 +60,55 @@ function Responder({ token, callupId, onDone }: { token: string; callupId: strin
 
 function TransportRow({ token, player }: { token: string; player: GuestPlayer }) {
   const [transport, setLocalTransport] = useState(player.transport);
+  // Server truth can change from outside this control too — e.g. re-answering a single
+  // match clears a "no voy" set here. Adjust local state during render (not an effect)
+  // when the prop moves, per React's guidance for syncing state from props.
+  const [trackedProp, setTrackedProp] = useState(player.transport);
+  if (player.transport !== trackedProp) {
+    setTrackedProp(player.transport);
+    setLocalTransport(player.transport);
+  }
   const [pending, start] = useTransition();
-  const pick = (t: "bus" | "own") =>
+  const pick = (t: "bus" | "own" | "no_go") =>
     start(async () => {
       const r = await setTransport(token, player.player_id, t);
       if (r.ok) setLocalTransport(t);
     });
   const opt = "flex-1 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50";
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-2">
-      <span className="text-sm">
-        {player.jersey_number != null && <span className="mr-1 font-mono text-xs text-muted-foreground">#{player.jersey_number}</span>}
-        {player.player_name}
-      </span>
-      <div className="flex gap-2">
-        <button
-          disabled={pending}
-          onClick={() => pick("bus")}
-          className={`${opt} ${transport === "bus" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
-        >
-          🚌 Buseta
-        </button>
-        <button
-          disabled={pending}
-          onClick={() => pick("own")}
-          className={`${opt} ${transport === "own" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
-        >
-          🚗 Medios propios
-        </button>
+    <li className="py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm">
+          {player.jersey_number != null && <span className="mr-1 font-mono text-xs text-muted-foreground">#{player.jersey_number}</span>}
+          {player.player_name}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            disabled={pending}
+            onClick={() => pick("bus")}
+            className={`${opt} ${transport === "bus" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
+          >
+            🚌 Buseta
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => pick("own")}
+            className={`${opt} ${transport === "own" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
+          >
+            🚗 Medios propios
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => pick("no_go")}
+            className={`${opt} ${transport === "no_go" ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-950" : "border-border bg-card"}`}
+          >
+            🚫 No voy
+          </button>
+        </div>
       </div>
+      {transport === "no_go" && (
+        <p className="mt-1 text-xs text-red-600">Marcado como ausente en todos los partidos de esta jornada.</p>
+      )}
     </li>
   );
 }
