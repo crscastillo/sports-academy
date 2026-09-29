@@ -76,16 +76,22 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-background text-xs uppercase text-muted-foreground">
+            <thead className="border-b border-border bg-background/60 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               <tr>
-                <th className="px-3 py-2"></th><th className="px-3">#</th><th className="px-3">Nombre</th><th className="px-3">Cédula</th>
-                <th className="px-3">Edad</th><th className="px-3">Estatura</th><th className="px-3">Pos.</th><th className="px-3">Equipos</th>
+                <th className="w-11 px-3 py-2.5"></th>
+                <th className="px-3 py-2.5">#</th>
+                <th className="px-3 py-2.5">Nombre</th>
+                <th className="px-3 py-2.5">Cédula</th>
+                <th className="px-3 py-2.5">Edad</th>
+                <th className="px-3 py-2.5">Estatura</th>
+                <th className="px-3 py-2.5">Posiciones</th>
+                <th className="px-3 py-2.5">Equipos</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p) => (
-                <tr key={p.id} className="border-t border-border hover:bg-background/60">
-                  <td className="py-2 pl-3">
+                <tr key={p.id} className="border-t border-border transition-colors hover:bg-background/60">
+                  <td className="py-2.5 pl-3">
                     <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-background">
                       {p.avatar_url ? (
                         <Image src={p.avatar_url} alt="" width={32} height={32} className="h-full w-full object-cover" />
@@ -94,16 +100,16 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2 font-mono">{p.jersey_number ?? "—"}</td>
-                  <td className="px-3">
+                  <td className="px-3 py-2.5 font-mono text-muted-foreground">{p.jersey_number ?? "—"}</td>
+                  <td className="px-3 py-2.5">
                     <Link href={`/players/${p.id}`} className="font-medium hover:underline">{p.first_name} {p.last_name}</Link>
                     {!p.active && <span className="ml-2"><Badge tone="red">Inactivo</Badge></span>}
                   </td>
-                  <td className="px-3 text-muted-foreground">{p.national_id ?? "—"}</td>
-                  <td className="px-3">{ageOn(p.birth_date) ?? "—"}</td>
-                  <td className="px-3">{p.height_cm ? `${p.height_cm} cm` : "—"}</td>
-                  <td className="px-3">{p.positions.join(", ") || "—"}</td>
-                  <td className="px-3">
+                  <td className="px-3 py-2.5 text-muted-foreground">{p.national_id ?? "—"}</td>
+                  <td className="px-3 py-2.5">{ageOn(p.birth_date) ?? "—"}</td>
+                  <td className="px-3 py-2.5">{p.height_cm ? `${p.height_cm} cm` : "—"}</td>
+                  <td className="px-3 py-2.5">{p.positions.join(", ") || "—"}</td>
+                  <td className="px-3 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {p.team_players.map((tp) => tp.team && <Badge key={tp.team.id} tone="brand">{tp.team.name}</Badge>)}
                     </div>
