@@ -25,9 +25,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
   }
 
   return (
-    <>
+    <div className="md:flex">
       <Nav email={user.email ?? ""} />
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-    </>
+      <div className="min-w-0 flex-1">
+        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      </div>
+    </div>
   );
 }
