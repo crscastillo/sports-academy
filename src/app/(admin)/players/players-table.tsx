@@ -30,7 +30,7 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
         if (!genderOk) return false;
       }
       if (needle) {
-        const haystack = `${p.first_name} ${p.last_name} ${p.national_id ?? ""}`.toLowerCase();
+        const haystack = `${p.first_name} ${p.last_name} ${p.national_id ?? ""} ${p.jersey_number ?? ""}`.toLowerCase();
         if (!haystack.includes(needle)) return false;
       }
       return true;
@@ -43,7 +43,7 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
       <div className="mb-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-48 flex-1">
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre o cédula" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, cédula o dorsal" />
           </div>
           <div className="w-48">
             <Select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
