@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/labels";
-import { CallupBoard, type GuestMatch } from "./callup-board";
+import { CallupBoard, type GuestMatch, type GuestPlayer } from "./callup-board";
 
 export const metadata = { title: "Convocatoria", robots: { index: false } };
 
 type Data = {
   matchday: { title: string | null; date: string; venue: string; address: string | null; is_home: boolean; notes: string | null };
   bus_trips: { label: string; departure_place: string | null; departure_time: string | null; return_time: string | null }[];
+  players: GuestPlayer[];
   matches: GuestMatch[];
 };
 
@@ -49,8 +50,8 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
         </section>
       )}
 
-      <p className="mb-3 text-sm text-muted-foreground">Buscá a tu atleta y confirmá si asiste y cómo llega.</p>
-      <CallupBoard token={token} matches={d.matches} />
+      <p className="mb-3 text-sm text-muted-foreground">Buscá a tu atleta, confirmá si asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
+      <CallupBoard token={token} matches={d.matches} players={d.players} />
     </main>
   );
 }

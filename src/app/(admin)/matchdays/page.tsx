@@ -7,14 +7,17 @@ export const metadata = { title: "Jornadas" };
 
 type Row = {
   id: string; title: string | null; date: string; venue: string; address: string | null; is_home: boolean;
-  matches: { id: string; team: { category: string } | null; callups: { status: string; transport: string | null }[] }[];
+  matches: { id: string; team: { category: string } | null; callups: { status: string; player_id: string }[] }[];
+  matchday_transport: { player_id: string; transport: string | null }[];
 };
 
 function MatchdayCard({ m }: { m: Row }) {
   const callups = m.matches.flatMap((x) => x.callups);
   const confirmed = callups.filter((c) => c.status === "confirmed").length;
   const pending = callups.filter((c) => c.status === "pending").length;
-  const bus = callups.filter((c) => c.status === "confirmed" && c.transport === "bus").length;
+  const confirmedPlayerIds = new Set(callups.filter((c) => c.status === "confirmed").map((c) => c.player_id));
+  const transportByPlayer = new Map(m.matchday_transport.map((t) => [t.player_id, t.transport]));
+  const bus = [...confirmedPlayerIds].filter((id) => transportByPlayer.get(id) === "bus").length;
   const cats = [...new Set(m.matches.map((x) => x.team?.category).filter(Boolean))];
   return (
     <Link href={`/matchdays/${m.id}`} className="block rounded-xl border border-border bg-card p-4 shadow-sm hover:border-primary">
@@ -44,7 +47,7 @@ function MatchdayCard({ m }: { m: Row }) {
 export default async function MatchdaysPage() {
   const supabase = await createClient();
   const today = todayISO();
-  const select = "id, title, date, venue, address, is_home, matches(id, team:teams(category), callups(status, transport))";
+  const select = "id, title, date, venue, address, is_home, matches(id, team:teams(category), callups(status, player_id)), matchday_transport(player_id, transport)";
   const [{ data: upcoming }, { data: past }] = await Promise.all([
     supabase.from("matchdays").select(select).gte("date", today).order("date"),
     supabase.from("matchdays").select(select).lt("date", today).order("date", { ascending: false }).limit(20),

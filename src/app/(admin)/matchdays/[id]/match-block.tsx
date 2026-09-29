@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge, Card, Input } from "@/components/ui";
 import { AutoSubmitForm, ConfirmSubmit, SubmitButton } from "@/components/client";
-import { CALLUP_STATUS, TRANSPORT, formatTime, genderLabel } from "@/lib/labels";
+import { CALLUP_STATUS, formatTime, genderLabel } from "@/lib/labels";
 import { callUpPlayers, deleteMatch, removeCallup, setAttendance, setCallupResponse, updateMatch } from "../actions";
 
 type PlayerLite = { id: string; first_name: string; last_name: string; jersey_number: number | null };
@@ -11,7 +11,7 @@ export type MatchRow = {
   score_for: number | null; score_against: number | null; notes: string | null;
   team: { id: string; name: string; category: string; gender: string; team_players: { player: PlayerLite & { active: boolean } }[] } | null;
   callups: {
-    id: string; status: string; transport: string | null; guest_note: string | null; responded_at: string | null;
+    id: string; status: string; guest_note: string | null; responded_at: string | null;
     attended: boolean | null; player: PlayerLite & { guardian_phone: string | null };
   }[];
 };
@@ -60,16 +60,10 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
                     {c.guest_note && <div className="text-xs text-muted-foreground">“{c.guest_note}”</div>}
                   </td>
                   <td className="py-2 pr-2">
-                    <AutoSubmitForm key={`${c.status}-${c.transport}`} action={setCallupResponse.bind(null, c.id, matchdayId)} className="flex flex-wrap items-center gap-1">
+                    <AutoSubmitForm key={c.status} action={setCallupResponse.bind(null, c.id, matchdayId)} className="flex flex-wrap items-center gap-1">
                       <select name="status" defaultValue={c.status} className={`rounded-md border px-1.5 py-1 text-xs ${c.status === "confirmed" ? "border-green-300 bg-green-50 dark:bg-green-950" : c.status === "declined" ? "border-red-300 bg-red-50 dark:bg-red-950" : "border-amber-300 bg-amber-50 dark:bg-amber-950"}`}>
                         {Object.entries(CALLUP_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
-                      {c.status === "confirmed" && (
-                        <select name="transport" defaultValue={c.transport ?? ""} className="rounded-md border border-border bg-card px-1.5 py-1 text-xs">
-                          <option value="">¿Transporte?</option>
-                          {Object.entries(TRANSPORT).map(([v, l]) => <option key={v} value={v}>{v === "bus" ? "🚌 " : "🚗 "}{l}</option>)}
-                        </select>
-                      )}
                     </AutoSubmitForm>
                   </td>
                   <td className="py-2 pr-2">

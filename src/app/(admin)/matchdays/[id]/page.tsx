@@ -2,11 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, Field, Input, PageHeader, Select, Stat } from "@/components/ui";
-import { ConfirmSubmit, ShareLink, SubmitButton } from "@/components/client";
+import { AutoSubmitForm, ConfirmSubmit, ShareLink, SubmitButton } from "@/components/client";
 import { formatDate, formatTime, genderLabel } from "@/lib/labels";
 import {
   addBusTrip, addMatch, createDonationListForMatchday, deleteBusTrip, deleteMatchday,
-  regenerateShareToken, updateMatchday,
+  regenerateShareToken, setPlayerTransport, updateMatchday,
 } from "../actions";
 import { MatchdayForm, type Matchday } from "../matchday-form";
 import { MatchBlock, type MatchRow } from "./match-block";
@@ -19,30 +19,33 @@ type Bus = {
 export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: md }, { data: matches }, { data: teams }, { data: buses }, { data: lists }] = await Promise.all([
+  const [{ data: md }, { data: matches }, { data: teams }, { data: buses }, { data: lists }, { data: transport }] = await Promise.all([
     supabase.from("matchdays").select("*").eq("id", id).single(),
     supabase
       .from("matches")
       .select(`id, opponent, start_time, court, score_for, score_against, notes,
         team:teams(id, name, category, gender, team_players(player:players(id, first_name, last_name, jersey_number, active))),
-        callups(id, status, transport, guest_note, responded_at, attended, player:players(id, first_name, last_name, jersey_number, guardian_phone))`)
+        callups(id, status, guest_note, responded_at, attended, player:players(id, first_name, last_name, jersey_number, guardian_phone))`)
       .eq("matchday_id", id)
       .order("start_time", { nullsFirst: false }),
     supabase.from("teams").select("id, name, category, gender").order("category"),
     supabase.from("bus_trips").select("*").eq("matchday_id", id).order("departure_time"),
     supabase.from("donation_lists").select("id, title").eq("matchday_id", id),
+    supabase.from("matchday_transport").select("player_id, transport").eq("matchday_id", id),
   ]);
   if (!md) notFound();
   const matchday = md as Matchday;
   const rows = (matches ?? []) as unknown as MatchRow[];
   const trips = (buses ?? []) as Bus[];
+  const transportByPlayer = new Map((transport ?? []).map((t) => [t.player_id, t.transport as string | null]));
 
-  // Transport summary — unique players across all matches of the day
+  // Unique players across all matches of the day — one attendance/transport reading per player.
   const all = rows.flatMap((m) => m.callups.map((c) => ({ ...c, match: m })));
   const confirmed = all.filter((c) => c.status === "confirmed");
-  const busRiders = new Map<string, (typeof all)[number]>();
-  confirmed.filter((c) => c.transport === "bus").forEach((c) => busRiders.set(c.player.id, c));
-  const ownCount = new Set(confirmed.filter((c) => c.transport === "own").map((c) => c.player.id)).size;
+  const confirmedPlayers = [...new Map(confirmed.map((c) => [c.player.id, c.player])).values()]
+    .sort((a, b) => a.last_name.localeCompare(b.last_name));
+  const busRiders = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "bus");
+  const ownCount = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "own").length;
   const capacity = trips.reduce((s, t) => s + (t.capacity ?? 0), 0);
   const pending = all.filter((c) => c.status === "pending").length;
   const declined = all.filter((c) => c.status === "declined").length;
@@ -68,7 +71,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         <Stat label="Pendientes" value={pending} tone="text-amber-600" />
         <Stat label="No asisten" value={declined} tone="text-red-600" />
         {!matchday.is_home && (
-          <Stat label="En buseta" value={`${busRiders.size}${capacity ? ` / ${capacity}` : ""}`} tone={capacity && busRiders.size > capacity ? "text-red-600" : ""} />
+          <Stat label="En buseta" value={`${busRiders.length}${capacity ? ` / ${capacity}` : ""}`} tone={capacity && busRiders.length > capacity ? "text-red-600" : ""} />
         )}
       </div>
 
@@ -152,27 +155,32 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
             <div className="mt-4 border-t border-border pt-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-semibold">Pasajeros confirmados ({busRiders.size})</span>
+                <span className="font-semibold">Transporte por atleta ({confirmedPlayers.length})</span>
                 {capacity > 0 && (
-                  <Badge tone={busRiders.size > capacity ? "red" : "green"}>
-                    {busRiders.size > capacity ? `Faltan ${busRiders.size - capacity} campos` : `${capacity - busRiders.size} libres`}
+                  <Badge tone={busRiders.length > capacity ? "red" : "green"}>
+                    {busRiders.length > capacity ? `Faltan ${busRiders.length - capacity} campos` : `${capacity - busRiders.length} libres`}
                   </Badge>
                 )}
               </div>
-              {busRiders.size === 0 ? (
-                <p className="text-sm text-muted-foreground">Nadie ha confirmado buseta aún.</p>
+              {confirmedPlayers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nadie ha confirmado asistencia aún.</p>
               ) : (
-                <ol className="list-decimal space-y-0.5 pl-5 text-sm">
-                  {[...busRiders.values()]
-                    .sort((a, b) => a.player.last_name.localeCompare(b.player.last_name))
-                    .map((c) => (
-                      <li key={c.player.id}>
-                        {c.player.first_name} {c.player.last_name} <span className="text-xs text-muted-foreground">{c.match.team?.category}</span>
-                      </li>
-                    ))}
-                </ol>
+                <ul className="space-y-1">
+                  {confirmedPlayers.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                      <span>{p.first_name} {p.last_name}</span>
+                      <AutoSubmitForm action={setPlayerTransport.bind(null, p.id, id)}>
+                        <select name="transport" defaultValue={transportByPlayer.get(p.id) ?? ""} className="rounded-md border border-border bg-card px-1.5 py-1 text-xs">
+                          <option value="">Sin definir</option>
+                          <option value="bus">🚌 Buseta</option>
+                          <option value="own">🚗 Medios propios</option>
+                        </select>
+                      </AutoSubmitForm>
+                    </li>
+                  ))}
+                </ul>
               )}
-              <p className="mt-2 text-xs text-muted-foreground">{ownCount} llegan por sus propios medios.</p>
+              <p className="mt-2 text-xs text-muted-foreground">1 voto por atleta para toda la jornada · {ownCount} llegan por sus propios medios.</p>
             </div>
           </Card>
           )}

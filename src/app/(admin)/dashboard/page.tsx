@@ -5,7 +5,8 @@ import { formatDate, formatTime, todayISO } from "@/lib/labels";
 
 type Md = {
   id: string; title: string | null; date: string; venue: string; is_home: boolean;
-  matches: { callups: { status: string; transport: string | null }[] }[];
+  matches: { callups: { status: string; player_id: string }[] }[];
+  matchday_transport: { player_id: string; transport: string | null }[];
 };
 type Tr = { id: string; date: string; start_time: string | null; location: string | null; training_teams: { team: { category: string } | null }[] };
 
@@ -17,7 +18,7 @@ export default async function Dashboard() {
     supabase.from("teams").select("id", { count: "exact", head: true }),
     supabase
       .from("matchdays")
-      .select("id, title, date, venue, is_home, matches(callups(status, transport))")
+      .select("id, title, date, venue, is_home, matches(callups(status, player_id)), matchday_transport(player_id, transport)")
       .gte("date", today).order("date").limit(4),
     supabase
       .from("trainings")
@@ -46,7 +47,9 @@ export default async function Dashboard() {
                 const c = m.matches.flatMap((x) => x.callups);
                 const pend = c.filter((x) => x.status === "pending").length;
                 const conf = c.filter((x) => x.status === "confirmed").length;
-                const bus = c.filter((x) => x.status === "confirmed" && x.transport === "bus").length;
+                const confirmedPlayerIds = new Set(c.filter((x) => x.status === "confirmed").map((x) => x.player_id));
+                const transportByPlayer = new Map(m.matchday_transport.map((t) => [t.player_id, t.transport]));
+                const bus = [...confirmedPlayerIds].filter((id) => transportByPlayer.get(id) === "bus").length;
                 return (
                   <li key={m.id} className="py-2.5">
                     <Link href={`/matchdays/${m.id}`} className="flex items-center justify-between gap-2 hover:underline">
