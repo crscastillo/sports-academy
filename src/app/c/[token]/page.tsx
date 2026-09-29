@@ -51,7 +51,7 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
       )}
 
       <p className="mb-3 text-sm text-muted-foreground">Buscá a tu atleta, confirmá si asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
-      <CallupBoard token={token} matches={d.matches} players={d.players} />
+      <CallupBoard token={token} matches={d.matches} players={d.players} isHome={md.is_home} />
     </main>
   );
 }

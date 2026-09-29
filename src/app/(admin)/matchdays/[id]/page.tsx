@@ -53,6 +53,8 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
   const busRiders = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "bus");
   const ownCount = confirmedPlayers.filter((p) => transportByPlayer.get(p.id) === "own").length;
   const noGoCount = calledPlayers.filter((p) => transportByPlayer.get(p.id) === "no_go").length;
+  const confirmedPlayerIds = new Set(confirmedPlayers.map((p) => p.id));
+  const missingTransportCount = confirmedPlayers.filter((p) => !transportByPlayer.get(p.id)).length;
   const capacity = trips.reduce((s, t) => s + (t.capacity ?? 0), 0);
   const pending = all.filter((c) => c.status === "pending").length;
   const declined = all.filter((c) => c.status === "declined").length;
@@ -129,31 +131,44 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
       </details>
 
       <div className="mt-4 border-t border-border pt-3">
-        <div className="mb-2 flex items-center justify-between text-sm">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span className="font-semibold">Transporte por atleta ({calledPlayers.length})</span>
-          {capacity > 0 && (
-            <Badge tone={busRiders.length > capacity ? "red" : "green"}>
-              {busRiders.length > capacity ? `Faltan ${busRiders.length - capacity} campos` : `${capacity - busRiders.length} libres`}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {missingTransportCount > 0 && <Badge tone="amber">⚠️ {missingTransportCount} sin transporte</Badge>}
+            {capacity > 0 && (
+              <Badge tone={busRiders.length > capacity ? "red" : "green"}>
+                {busRiders.length > capacity ? `Faltan ${busRiders.length - capacity} campos` : `${capacity - busRiders.length} libres`}
+              </Badge>
+            )}
+          </div>
         </div>
         {calledPlayers.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nadie ha sido convocado aún.</p>
         ) : (
           <ul className="space-y-1">
-            {calledPlayers.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
-                <span>{p.first_name} {p.last_name}</span>
-                <AutoSubmitForm action={setPlayerTransport.bind(null, p.id, id)}>
-                  <select name="transport" defaultValue={transportByPlayer.get(p.id) ?? ""} className="rounded-md border border-border bg-card px-1.5 py-1 text-xs">
-                    <option value="">Sin definir</option>
-                    <option value="bus">🚌 Buseta</option>
-                    <option value="own">🚗 Medios propios</option>
-                    <option value="no_go">🚫 No voy (declina todos los partidos)</option>
-                  </select>
-                </AutoSubmitForm>
-              </li>
-            ))}
+            {calledPlayers.map((p) => {
+              const missing = confirmedPlayerIds.has(p.id) && !transportByPlayer.get(p.id);
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span>
+                    {p.first_name} {p.last_name}
+                    {missing && <span className="ml-1.5 text-xs text-amber-600" title="Confirmó asistencia pero no eligió transporte">⚠️</span>}
+                  </span>
+                  <AutoSubmitForm action={setPlayerTransport.bind(null, p.id, id)}>
+                    <select
+                      name="transport"
+                      defaultValue={transportByPlayer.get(p.id) ?? ""}
+                      className={`rounded-md border px-1.5 py-1 text-xs ${missing ? "border-amber-400 bg-amber-50 dark:bg-amber-950" : "border-border bg-card"}`}
+                    >
+                      <option value="">Sin definir</option>
+                      <option value="bus">🚌 Buseta</option>
+                      <option value="own">🚗 Medios propios</option>
+                      <option value="no_go">🚫 No voy (declina todos los partidos)</option>
+                    </select>
+                  </AutoSubmitForm>
+                </li>
+              );
+            })}
           </ul>
         )}
         <p className="mt-2 text-xs text-muted-foreground">
@@ -187,10 +202,6 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         )}
       </div>
 
-      <Card title="Editar jornada" className="mb-6">
-        <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} submitLabel="Guardar" />
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {matchday.is_home ? (
@@ -208,6 +219,10 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         </div>
 
         <div className="space-y-6">
+          <Card title="Editar jornada">
+            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} submitLabel="Guardar" />
+          </Card>
+
           {matchday.is_home && (
             <Card title="Soda y ventas">
               {lists?.length ? (

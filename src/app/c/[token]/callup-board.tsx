@@ -58,7 +58,7 @@ function Responder({ token, callupId, onDone }: { token: string; callupId: strin
   );
 }
 
-function TransportRow({ token, player }: { token: string; player: GuestPlayer }) {
+function TransportRow({ token, player, needsTransport }: { token: string; player: GuestPlayer; needsTransport: boolean }) {
   const [transport, setLocalTransport] = useState(player.transport);
   // Server truth can change from outside this control too — e.g. re-answering a single
   // match clears a "no voy" set here. Adjust local state during render (not an effect)
@@ -69,6 +69,7 @@ function TransportRow({ token, player }: { token: string; player: GuestPlayer })
     setLocalTransport(player.transport);
   }
   const [pending, start] = useTransition();
+  const missing = needsTransport && !transport;
   const pick = (t: "bus" | "own" | "no_go") =>
     start(async () => {
       const r = await setTransport(token, player.player_id, t);
@@ -81,6 +82,7 @@ function TransportRow({ token, player }: { token: string; player: GuestPlayer })
         <span className="text-sm">
           {player.jersey_number != null && <span className="mr-1 font-mono text-xs text-muted-foreground">#{player.jersey_number}</span>}
           {player.player_name}
+          {missing && <span className="ml-1.5 text-xs text-amber-600">⚠️ falta elegir</span>}
         </span>
         <div className="flex flex-wrap gap-2">
           <button
@@ -113,10 +115,16 @@ function TransportRow({ token, player }: { token: string; player: GuestPlayer })
   );
 }
 
-export function CallupBoard({ token, matches, players }: { token: string; matches: GuestMatch[]; players: GuestPlayer[] }) {
+export function CallupBoard({ token, matches, players, isHome }: { token: string; matches: GuestMatch[]; players: GuestPlayer[]; isHome: boolean }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+
+  const goingPlayerIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of matches) for (const c of m.callups) if (c.status === "confirmed") ids.add(c.player_id);
+    return ids;
+  }, [matches]);
 
   const nq = norm(q.trim());
   const filteredMatches = useMemo(() => {
@@ -145,7 +153,9 @@ export function CallupBoard({ token, matches, players }: { token: string; matche
           <h2 className="mb-1 font-semibold">🚌 ¿Cómo llega tu atleta?</h2>
           <p className="mb-2 text-xs text-muted-foreground">Una sola respuesta por atleta para toda la jornada, aunque tenga más de un partido.</p>
           <ul className="divide-y divide-border">
-            {filteredPlayers.map((p) => <TransportRow key={p.player_id} token={token} player={p} />)}
+            {filteredPlayers.map((p) => (
+              <TransportRow key={p.player_id} token={token} player={p} needsTransport={!isHome && goingPlayerIds.has(p.player_id)} />
+            ))}
           </ul>
         </section>
       )}
