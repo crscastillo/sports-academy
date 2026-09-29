@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, Empty, PageHeader } from "@/components/ui";
 import { ConfirmSubmit, SubmitButton } from "@/components/client";
 import { ageOn, genderLabel } from "@/lib/labels";
-import { isPlayerEligibleForTeam } from "@/lib/eligibility";
+import { getAgeThresholds, isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { addPlayersToTeam, deleteTeam, removePlayerFromTeam, updateTeam } from "../actions";
 import { TeamForm, type Team } from "../team-form";
 
@@ -13,7 +13,7 @@ type P = { id: string; first_name: string; last_name: string; jersey_number: num
 export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: team }, { data: roster }, { data: allPlayers }, { data: coaches }] = await Promise.all([
+  const [{ data: team }, { data: roster }, { data: allPlayers }, { data: coaches }, thresholds] = await Promise.all([
     supabase.from("teams").select("*").eq("id", id).single(),
     supabase
       .from("team_players")
@@ -25,6 +25,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
       .eq("active", true)
       .order("last_name"),
     supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
+    getAgeThresholds(supabase),
   ]);
   if (!team) notFound();
 
@@ -32,7 +33,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
     (a.jersey_number ?? 999) - (b.jersey_number ?? 999) || a.last_name.localeCompare(b.last_name),
   );
   const memberIds = new Set(members.map((m) => m.id));
-  const available = ((allPlayers ?? []) as P[]).filter((p) => !memberIds.has(p.id) && isPlayerEligibleForTeam(p, team));
+  const available = ((allPlayers ?? []) as P[]).filter((p) => !memberIds.has(p.id) && isPlayerEligibleForTeam(p, team, thresholds));
 
   return (
     <>

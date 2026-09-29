@@ -1,22 +1,36 @@
+import type { createClient } from "@/lib/supabase/server";
 import { ageAchievedThisYear, categoryAgeCap } from "@/lib/labels";
 
-// One bracket of slack below the strict cutoff, so a player who hasn't had this
-// year's birthday yet can still be assigned to their current (not-yet-superseded) age group.
-const AGE_SLACK = 1;
+export type AgeThresholds = { min: number; max: number | null };
+
+// Default when an academy hasn't configured its own thresholds yet:
+// one bracket of slack below the strict cutoff, no cap above.
+export const DEFAULT_AGE_THRESHOLDS: AgeThresholds = { min: 1, max: null };
 
 /**
  * Whether a player can be assigned to a team, based on age and gender.
- * Age: eligible if the category's cap is at least the age the player achieves this
- * calendar year, minus a bracket of slack (turning 13 this year means U12+).
+ * Age: eligible if the category's cap is within [age - min, age + max] of the age the
+ * player achieves this calendar year (max null means no upper bound).
  * Gender: eligible if the team is mixed, the player has no gender set, or they match.
  */
 export function isPlayerEligibleForTeam(
   player: { birth_date?: string | null; gender?: string | null },
-  team: { category: string; gender?: string | null }
+  team: { category: string; gender?: string | null },
+  thresholds: AgeThresholds = DEFAULT_AGE_THRESHOLDS
 ) {
   const age = ageAchievedThisYear(player.birth_date);
   const cap = categoryAgeCap(team.category);
-  const ageOk = cap == null || age == null || cap >= age - AGE_SLACK;
+  const ageOk =
+    cap == null ||
+    age == null ||
+    (cap >= age - thresholds.min && (thresholds.max == null || cap <= age + thresholds.max));
   const genderOk = !player.gender || team.gender === "mixed" || team.gender === player.gender;
   return ageOk && genderOk;
+}
+
+/** Reads the current academy's configured age-eligibility thresholds (Settings page). */
+export async function getAgeThresholds(supabase: Awaited<ReturnType<typeof createClient>>): Promise<AgeThresholds> {
+  const { data } = await supabase.from("academies").select("age_eligibility_min, age_eligibility_max").single();
+  if (!data) return DEFAULT_AGE_THRESHOLDS;
+  return { min: data.age_eligibility_min, max: data.age_eligibility_max };
 }

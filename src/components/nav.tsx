@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/matchdays", label: "Jornadas" },
   { href: "/donations", label: "Donaciones" },
   { href: "/staff", label: "Personal" },
+  { href: "/settings", label: "Configuración" },
 ];
 
 export function Nav({ email }: { email: string }) {

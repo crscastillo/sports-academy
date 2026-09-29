@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
 import { ageOn, CALLUP_STATUS, formatDate } from "@/lib/labels";
-import { isPlayerEligibleForTeam } from "@/lib/eligibility";
+import { getAgeThresholds, isPlayerEligibleForTeam } from "@/lib/eligibility";
 import { deletePlayer, updatePlayer } from "../actions";
 import { PlayerForm, type Player } from "../player-form";
 
@@ -16,7 +16,7 @@ type CallupRow = {
 export default async function PlayerPage({ params }: PageProps<"/players/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: player }, { data: teams }, { data: links }, { data: callups }] = await Promise.all([
+  const [{ data: player }, { data: teams }, { data: links }, { data: callups }, thresholds] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).single(),
     supabase.from("teams").select("id, name, category, gender").order("category"),
     supabase.from("team_players").select("team_id").eq("player_id", id),
@@ -24,6 +24,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
       .from("callups")
       .select("id, status, attended, match:matches(opponent, matchday:matchdays(id, date, venue))")
       .eq("player_id", id),
+    getAgeThresholds(supabase),
   ]);
   if (!player) notFound();
 
@@ -34,7 +35,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
 
   const selectedTeamIds = (links ?? []).map((l) => l.team_id);
-  const eligibleTeams = (teams ?? []).filter((t) => selectedTeamIds.includes(t.id) || isPlayerEligibleForTeam(p, t));
+  const eligibleTeams = (teams ?? []).filter((t) => selectedTeamIds.includes(t.id) || isPlayerEligibleForTeam(p, t, thresholds));
 
   return (
     <>
