@@ -25,6 +25,7 @@ function matchdayFields(fd: FormData) {
     address: str(fd, "address"),
     is_home: bool(fd, "is_home"),
     notes: str(fd, "notes"),
+    coach_id: str(fd, "coach_id"),
   };
 }
 

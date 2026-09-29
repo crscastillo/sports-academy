@@ -21,7 +21,7 @@ type Bus = {
 export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: md }, { data: matches }, { data: teams }, { data: buses }, { data: lists }, { data: transport }] = await Promise.all([
+  const [{ data: md }, { data: matches }, { data: teams }, { data: buses }, { data: lists }, { data: transport }, { data: coaches }] = await Promise.all([
     supabase.from("matchdays").select("*").eq("id", id).single(),
     supabase
       .from("matches")
@@ -34,12 +34,16 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
     supabase.from("bus_trips").select("*").eq("matchday_id", id).order("departure_time"),
     supabase.from("donation_lists").select("id, title").eq("matchday_id", id),
     supabase.from("matchday_transport").select("player_id, transport").eq("matchday_id", id),
+    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
   ]);
   if (!md) notFound();
   const matchday = md as Matchday;
   const rows = (matches ?? []) as unknown as MatchRow[];
   const trips = (buses ?? []) as Bus[];
   const transportByPlayer = new Map((transport ?? []).map((t) => [t.player_id, t.transport as string | null]));
+  const assignedCoach = coaches?.find((c) => c.id === matchday.coach_id);
+  const defaultCoach = coaches?.find((c) => c.is_default);
+  const effectiveCoach = assignedCoach ?? defaultCoach ?? null;
 
   // Unique players across all matches of the day — one attendance/transport reading per player.
   const all = rows.flatMap((m) => m.callups.map((c) => ({ ...c, match: m })));
@@ -187,6 +191,12 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
             {formatDate(matchday.date, { weekday: "long" })} · {matchday.venue}
             {matchday.address && <> · {matchday.address}</>} ·{" "}
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">Mapa</a>
+            {" · "}
+            {effectiveCoach ? (
+              <>Entrenador: {effectiveCoach.full_name}{!assignedCoach && <span className="text-xs"> (por defecto)</span>}</>
+            ) : (
+              "Sin entrenador asignado"
+            )}
           </>
         }
         action={<Link href="/matchdays" className="text-sm text-muted-foreground hover:underline">← Jornadas</Link>}
@@ -220,7 +230,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
 
         <div className="space-y-6">
           <Card title="Editar jornada">
-            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} submitLabel="Guardar" />
+            <MatchdayForm action={updateMatchday.bind(null, id)} matchday={matchday} coaches={coaches ?? []} submitLabel="Guardar" />
           </Card>
 
           {matchday.is_home && (
