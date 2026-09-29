@@ -4,7 +4,7 @@ import { ConfirmSubmit, SubmitButton } from "@/components/client";
 import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { COACH_TYPES, coachTypeLabel } from "@/lib/labels";
-import { createCoach, deleteCoach, inviteCoach, updateCoach } from "./actions";
+import { createCoach, deleteCoach, inviteCoach, setDefaultCoach, unsetDefaultCoach, updateCoach } from "./actions";
 
 export const metadata = { title: "Entrenadores" };
 
@@ -13,7 +13,7 @@ export default async function CoachesPage({ searchParams }: PageProps<"/coaches"
   const type = typeof sp.type === "string" ? sp.type : "";
 
   const supabase = await createClient();
-  let query = supabase.from("coaches").select("id, full_name, email, phone, type").order("full_name");
+  let query = supabase.from("coaches").select("id, full_name, email, phone, type, is_default").order("full_name");
   if (type) query = query.eq("type", type);
   const [{ data: coaches }, { data: staff }, { data: teams }] = await Promise.all([
     query,
@@ -75,6 +75,7 @@ export default async function CoachesPage({ searchParams }: PageProps<"/coaches"
                     <Field label="Nombre" className="flex-1"><Input name="full_name" required defaultValue={c.full_name} /></Field>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       <Badge tone="brand">{coachTypeLabel(c.type)}</Badge>
+                      {c.is_default && <Badge tone="amber">★ Predeterminado</Badge>}
                       {invited ? (
                         <Badge tone="green">Con acceso</Badge>
                       ) : c.email ? (
@@ -100,16 +101,23 @@ export default async function CoachesPage({ searchParams }: PageProps<"/coaches"
                     <SubmitButton variant="secondary">Guardar</SubmitButton>
                   </div>
                 </form>
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
-                  {invited ? (
-                    <span className="text-xs text-muted-foreground">Ya puede ingresar con su correo</span>
-                  ) : c.email ? (
-                    <form action={inviteCoach.bind(null, c.id)}>
-                      <SubmitButton variant="secondary" className="!py-1.5 text-xs">Invitar</SubmitButton>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {invited ? (
+                      <span className="text-xs text-muted-foreground">Ya puede ingresar con su correo</span>
+                    ) : c.email ? (
+                      <form action={inviteCoach.bind(null, c.id)}>
+                        <SubmitButton variant="secondary" className="!py-1.5 text-xs">Invitar</SubmitButton>
+                      </form>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Agregá un correo para invitar</span>
+                    )}
+                    <form action={(c.is_default ? unsetDefaultCoach : setDefaultCoach).bind(null, c.id)}>
+                      <SubmitButton variant="secondary" className="!py-1.5 text-xs">
+                        {c.is_default ? "Quitar predeterminado" : "Hacer predeterminado"}
+                      </SubmitButton>
                     </form>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Agregá un correo para invitar</span>
-                  )}
+                  </div>
                   <form action={deleteCoach.bind(null, c.id)}>
                     <ConfirmSubmit message="¿Eliminar este entrenador?">Eliminar</ConfirmSubmit>
                   </form>

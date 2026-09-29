@@ -24,7 +24,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
       .select("id, first_name, last_name, jersey_number, birth_date, positions, gender")
       .eq("active", true)
       .order("last_name"),
-    supabase.from("coaches").select("id, full_name").order("full_name"),
+    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
   ]);
   if (!team) notFound();
 

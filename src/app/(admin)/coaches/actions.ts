@@ -34,6 +34,23 @@ export async function deleteCoach(id: string) {
   revalidatePath("/coaches");
 }
 
+export async function setDefaultCoach(id: string) {
+  const supabase = await createClient();
+  await supabase.from("coaches").update({ is_default: false }).eq("is_default", true);
+  const { error } = await supabase.from("coaches").update({ is_default: true }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/coaches");
+  revalidatePath("/teams");
+}
+
+export async function unsetDefaultCoach(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("coaches").update({ is_default: false }).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/coaches");
+  revalidatePath("/teams");
+}
+
 export async function inviteCoach(id: string) {
   const supabase = await createClient();
   const { data: coach, error: coachError } = await supabase

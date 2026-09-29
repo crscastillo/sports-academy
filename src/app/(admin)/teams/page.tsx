@@ -21,7 +21,7 @@ export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
   if (gender) query = query.eq("gender", gender);
   const [{ data: teams }, { data: coaches }] = await Promise.all([
     query,
-    supabase.from("coaches").select("id, full_name").order("full_name"),
+    supabase.from("coaches").select("id, full_name, is_default").order("full_name"),
   ]);
 
   return (
