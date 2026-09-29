@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
+import { UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,42 @@ export function ShareLink({ path, label }: { path: string; label: string }) {
       <Button variant="outline" className="h-auto px-3 py-2 text-xs" render={<a href={`https://wa.me/?text=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" />}>
         WhatsApp
       </Button>
+    </div>
+  );
+}
+
+export function AvatarPicker({ name = "avatar", defaultUrl }: { name?: string; defaultUrl?: string | null }) {
+  const [preview, setPreview] = useState<string | null>(defaultUrl ?? null);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background">
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element -- live blob: preview before upload, next/image can't render blob URLs
+          <img src={preview} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <UserRound className="size-8 text-muted-foreground" />
+        )}
+      </div>
+      <div>
+        <input
+          type="file"
+          name={name}
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) setPreview(URL.createObjectURL(file));
+          }}
+          className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border file:border-border file:bg-card file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-background"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">JPG o PNG, máx 5MB.</p>
+      </div>
     </div>
   );
 }

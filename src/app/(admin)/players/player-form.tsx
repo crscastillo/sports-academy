@@ -1,5 +1,5 @@
 import { Field, Input, Select, Textarea } from "@/components/ui";
-import { SubmitButton } from "@/components/client";
+import { AvatarPicker, SubmitButton } from "@/components/client";
 import { GENDERS, POSITIONS } from "@/lib/labels";
 
 export type Player = {
@@ -18,6 +18,7 @@ export type Player = {
   guardian_name: string | null;
   guardian_phone: string | null;
   active: boolean;
+  avatar_url: string | null;
 };
 
 type TeamOpt = { id: string; name: string; category: string };
@@ -34,6 +35,11 @@ export function PlayerForm({
   const sel = new Set(selectedTeamIds);
   return (
     <form action={action} className="space-y-6">
+      <fieldset>
+        <legend className="mb-2 text-sm font-semibold">Foto</legend>
+        <AvatarPicker defaultUrl={player?.avatar_url} />
+      </fieldset>
+
       <fieldset className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <legend className="mb-2 text-sm font-semibold">Datos personales</legend>
         <Field label="Nombre"><Input name="first_name" required defaultValue={player?.first_name} /></Field>

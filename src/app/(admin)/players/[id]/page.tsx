@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
@@ -39,11 +41,22 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
 
   return (
     <>
-      <PageHeader
-        title={`${p.first_name} ${p.last_name}`}
-        subtitle={<>{p.jersey_number != null && <>#{p.jersey_number} · </>}{ageOn(p.birth_date) ?? "?"} años</>}
-        action={<Link href="/players" className="text-sm text-muted-foreground hover:underline">← Atletas</Link>}
-      />
+      <div className="flex items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background">
+          {p.avatar_url ? (
+            <Image src={p.avatar_url} alt="" width={64} height={64} className="h-full w-full object-cover" />
+          ) : (
+            <UserRound className="size-7 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex-1">
+          <PageHeader
+            title={`${p.first_name} ${p.last_name}`}
+            subtitle={<>{p.jersey_number != null && <>#{p.jersey_number} · </>}{ageOn(p.birth_date) ?? "?"} años</>}
+            action={<Link href="/players" className="text-sm text-muted-foreground hover:underline">← Atletas</Link>}
+          />
+        </div>
+      </div>
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Estatura" value={p.height_cm ? `${p.height_cm} cm` : "—"} />
         <Stat label="Peso" value={p.weight_kg ? `${p.weight_kg} kg` : "—"} />

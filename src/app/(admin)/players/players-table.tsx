@@ -1,13 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { UserRound } from "lucide-react";
 import { Badge, Empty, Input, Select } from "@/components/ui";
 import { ageOn, GENDERS } from "@/lib/labels";
 
 export type Row = {
   id: string; first_name: string; last_name: string; jersey_number: number | null; national_id: string | null;
   birth_date: string | null; height_cm: number | null; positions: string[]; active: boolean; gender: string | null;
+  avatar_url: string | null;
   team_players: { team: { id: string; name: string; category: string; gender: string } }[];
 };
 
@@ -75,13 +78,22 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
           <table className="w-full text-sm">
             <thead className="bg-background text-xs uppercase text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">#</th><th className="px-3">Nombre</th><th className="px-3">Cédula</th>
+                <th className="px-3 py-2"></th><th className="px-3">#</th><th className="px-3">Nombre</th><th className="px-3">Cédula</th>
                 <th className="px-3">Edad</th><th className="px-3">Estatura</th><th className="px-3">Pos.</th><th className="px-3">Equipos</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p) => (
                 <tr key={p.id} className="border-t border-border hover:bg-background/60">
+                  <td className="py-2 pl-3">
+                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border bg-background">
+                      {p.avatar_url ? (
+                        <Image src={p.avatar_url} alt="" width={32} height={32} className="h-full w-full object-cover" />
+                      ) : (
+                        <UserRound className="size-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-3 py-2 font-mono">{p.jersey_number ?? "—"}</td>
                   <td className="px-3">
                     <Link href={`/players/${p.id}`} className="font-medium hover:underline">{p.first_name} {p.last_name}</Link>

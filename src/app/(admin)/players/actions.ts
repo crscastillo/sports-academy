@@ -36,18 +36,42 @@ async function syncTeams(playerId: string, teamIds: string[]) {
   }
 }
 
+// Uploads the "avatar" file (if present) to a per-player object, so re-uploads just
+// overwrite it. Returns undefined when there's nothing to upload (leave avatar_url as-is).
+async function uploadAvatar(supabase: Awaited<ReturnType<typeof createClient>>, playerId: string, fd: FormData) {
+  const file = fd.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return undefined;
+
+  const { data: academy } = await supabase.from("academies").select("id").single();
+  if (!academy) return undefined;
+
+  const path = `${academy.id}/${playerId}`;
+  const { error } = await supabase.storage.from("player-photos").upload(path, file, {
+    upsert: true,
+    contentType: file.type || "application/octet-stream",
+  });
+  if (error) throw new Error(error.message);
+
+  const { data } = supabase.storage.from("player-photos").getPublicUrl(path);
+  return `${data.publicUrl}?t=${Date.now()}`;
+}
+
 export async function createPlayer(fd: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.from("players").insert(playerFields(fd)).select("id").single();
   if (error) throw new Error(friendly(error.message));
   await syncTeams(data.id, list(fd, "team_id"));
+  const avatar_url = await uploadAvatar(supabase, data.id, fd);
+  if (avatar_url) await supabase.from("players").update({ avatar_url }).eq("id", data.id);
   revalidatePath("/players");
   redirect(`/players/${data.id}`);
 }
 
 export async function updatePlayer(id: string, fd: FormData) {
   const supabase = await createClient();
-  const { error } = await supabase.from("players").update(playerFields(fd)).eq("id", id);
+  const avatar_url = await uploadAvatar(supabase, id, fd);
+  const fields = { ...playerFields(fd), ...(avatar_url ? { avatar_url } : {}) };
+  const { error } = await supabase.from("players").update(fields).eq("id", id);
   if (error) throw new Error(friendly(error.message));
   await syncTeams(id, list(fd, "team_id"));
   revalidatePath("/players");
@@ -57,6 +81,8 @@ export async function updatePlayer(id: string, fd: FormData) {
 
 export async function deletePlayer(id: string) {
   const supabase = await createClient();
+  const { data: academy } = await supabase.from("academies").select("id").single();
+  if (academy) await supabase.storage.from("player-photos").remove([`${academy.id}/${id}`]);
   const { error } = await supabase.from("players").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/players");
