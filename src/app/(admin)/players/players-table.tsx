@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { UserRound } from "lucide-react";
-import { Badge, Empty, Input, Select } from "@/components/ui";
+import { Badge, Card, Empty, Input, Select } from "@/components/ui";
 import { ageOn, GENDERS } from "@/lib/labels";
+import { AgeGenderChart } from "./age-gender-chart";
+import { AgeGenderRadarChart } from "./age-gender-radar-chart";
 
 export type Row = {
   id: string; first_name: string; last_name: string; jersey_number: number | null; national_id: string | null;
@@ -120,6 +122,16 @@ export function PlayersTable({ players, teams }: { players: Row[]; teams: TeamOp
           </table>
         </div>
       )}
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card title="Edad y género · atletas activos">
+          <AgeGenderChart players={filtered} genderFilter={gender} />
+        </Card>
+
+        <Card title="Edad y género · telaraña">
+          <AgeGenderRadarChart players={filtered} genderFilter={gender} />
+        </Card>
+      </div>
     </>
   );
 }
