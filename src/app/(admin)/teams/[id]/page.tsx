@@ -38,7 +38,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
       <PageHeader
         title={team.name}
         subtitle={<>{team.category} · {genderLabel(team.gender)} {team.season ? `· ${team.season}` : ""}</>}
-        action={<Link href="/teams" className="text-sm text-muted hover:underline">← Equipos</Link>}
+        action={<Link href="/teams" className="text-sm text-muted-foreground hover:underline">← Equipos</Link>}
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -48,12 +48,12 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-xs uppercase text-muted">
+                  <thead className="text-xs uppercase text-muted-foreground">
                     <tr><th className="py-2 pr-2">#</th><th className="pr-2">Nombre</th><th className="pr-2">Edad</th><th className="pr-2">Posiciones</th><th /></tr>
                   </thead>
                   <tbody>
                     {members.map((p) => (
-                      <tr key={p.id} className="border-t border-line">
+                      <tr key={p.id} className="border-t border-border">
                         <td className="py-2 pr-2 font-mono">{p.jersey_number ?? "—"}</td>
                         <td className="pr-2"><Link className="hover:underline" href={`/players/${p.id}`}>{p.first_name} {p.last_name}</Link></td>
                         <td className="pr-2">{ageOn(p.birth_date) ?? "—"}</td>
@@ -73,15 +73,15 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
 
           <Card title="Agregar atletas al equipo">
             {available.length === 0 ? (
-              <Empty>No hay más atletas activos. <Link href="/players/new" className="text-brand underline">Registrar atleta</Link></Empty>
+              <Empty>No hay más atletas activos. <Link href="/players/new" className="text-primary underline">Registrar atleta</Link></Empty>
             ) : (
               <form action={addPlayersToTeam.bind(null, id)} className="space-y-3">
-                <div className="grid max-h-80 gap-1 overflow-y-auto rounded-lg border border-line p-2 sm:grid-cols-2">
+                <div className="grid max-h-80 gap-1 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
                   {available.map((p) => (
-                    <label key={p.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-canvas">
+                    <label key={p.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-background">
                       <input type="checkbox" name="player_id" value={p.id} className="accent-[var(--brand)]" />
                       <span className="flex-1">{p.first_name} {p.last_name}</span>
-                      <span className="text-xs text-muted">{ageOn(p.birth_date) ?? "?"} años</span>
+                      <span className="text-xs text-muted-foreground">{ageOn(p.birth_date) ?? "?"} años</span>
                       {p.gender && <Badge>{genderLabel(p.gender).charAt(0)}</Badge>}
                     </label>
                   ))}

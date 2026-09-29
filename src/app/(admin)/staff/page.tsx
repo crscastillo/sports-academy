@@ -47,7 +47,7 @@ export default async function StaffPage() {
 
       {academy && (
         <Card title="Página pública de la academia" className="mb-6">
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-sm text-muted-foreground">
             Una página de solo lectura con las jornadas próximas y los resultados anteriores. No muestra atletas ni datos de contacto.
           </p>
           <AutoSubmitForm action={setAcademyPublic} className="mb-3">
@@ -62,15 +62,15 @@ export default async function StaffPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title="Con acceso" className="lg:col-span-2">
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-border">
             {staff?.map((s) => (
               <li key={s.email} className="flex items-center justify-between py-2 text-sm">
                 <span>
                   <span className="font-medium">{s.full_name ?? s.email}</span>
-                  {s.full_name && <span className="text-muted"> · {s.email}</span>}
+                  {s.full_name && <span className="text-muted-foreground"> · {s.email}</span>}
                 </span>
                 <form action={removeStaff.bind(null, s.email)}>
-                  <button className="text-xs text-muted hover:text-red-600">Quitar</button>
+                  <button className="text-xs text-muted-foreground hover:text-red-600">Quitar</button>
                 </form>
               </li>
             ))}
@@ -81,7 +81,7 @@ export default async function StaffPage() {
             <Field label="Correo"><Input type="email" name="email" required /></Field>
             <Field label="Nombre"><Input name="full_name" /></Field>
             <SubmitButton>Dar acceso</SubmitButton>
-            <p className="text-xs text-muted">La persona se registra con ese correo y una contraseña en la página de ingreso.</p>
+            <p className="text-xs text-muted-foreground">La persona se registra con ese correo y una contraseña en la página de ingreso.</p>
           </form>
         </Card>
       </div>

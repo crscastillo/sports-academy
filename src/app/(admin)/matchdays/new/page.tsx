@@ -9,7 +9,7 @@ export const metadata = { title: "Nueva jornada" };
 export default function NewMatchdayPage() {
   return (
     <>
-      <PageHeader title="Nueva jornada" action={<Link href="/matchdays" className="text-sm text-muted hover:underline">← Jornadas</Link>} />
+      <PageHeader title="Nueva jornada" action={<Link href="/matchdays" className="text-sm text-muted-foreground hover:underline">← Jornadas</Link>} />
       <Card>
         <MatchdayForm action={createMatchday} submitLabel="Crear jornada" defaultDate={todayISO()} />
       </Card>

@@ -20,10 +20,10 @@ export function Nav({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   const active = (h: string) => path === h || path.startsWith(h + "/");
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand">🏀</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">🏀</span>
           <span className="hidden sm:inline">Sports Academy</span>
         </Link>
         <nav className="hidden flex-1 gap-1 md:flex">
@@ -31,26 +31,26 @@ export function Nav({ email }: { email: string }) {
             <Link
               key={l.href}
               href={l.href}
-              className={`rounded-lg px-3 py-1.5 text-sm ${active(l.href) ? "bg-brand/10 font-semibold text-brand" : "text-muted hover:bg-canvas"}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${active(l.href) ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
             >
               {l.label}
             </Link>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-xs text-muted lg:inline">{email}</span>
+          <span className="hidden text-xs text-muted-foreground lg:inline">{email}</span>
           <form action="/auth/signout" method="post">
-            <button className="rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-canvas">Salir</button>
+            <button className="rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-background">Salir</button>
           </form>
-          <button className="rounded-lg border border-line px-2.5 py-1.5 text-sm md:hidden" onClick={() => setOpen(!open)} aria-label="Menú">
+          <button className="rounded-lg border border-border px-2.5 py-1.5 text-sm md:hidden" onClick={() => setOpen(!open)} aria-label="Menú">
             ☰
           </button>
         </div>
       </div>
       {open && (
-        <nav className="grid gap-1 border-t border-line px-4 py-2 md:hidden">
+        <nav className="grid gap-1 border-t border-border px-4 py-2 md:hidden">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className={`rounded-lg px-3 py-2 text-sm ${active(l.href) ? "bg-brand/10 font-semibold text-brand" : ""}`}>
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className={`rounded-lg px-3 py-2 text-sm ${active(l.href) ? "bg-primary/10 font-semibold text-primary" : ""}`}>
               {l.label}
             </Link>
           ))}

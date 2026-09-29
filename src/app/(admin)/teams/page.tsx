@@ -29,11 +29,11 @@ export default async function TeamsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((t) => (
-            <Link key={t.id} href={`/teams/${t.id}`} className="rounded-xl border border-line bg-surface p-4 shadow-sm transition hover:border-brand">
+            <Link key={t.id} href={`/teams/${t.id}`} className="rounded-xl border border-border bg-card p-4 shadow-sm transition hover:border-primary">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">{t.name}</div>
-                  <div className="text-sm text-muted">
+                  <div className="text-sm text-muted-foreground">
                     {(t.coach as unknown as { full_name: string } | null)?.full_name ?? "Sin entrenador asignado"}
                   </div>
                 </div>

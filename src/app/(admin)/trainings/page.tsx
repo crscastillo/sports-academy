@@ -54,12 +54,12 @@ export default async function TrainingsPage({ searchParams }: PageProps<"/traini
       <PageHeader title="Entrenamientos" subtitle="Planificador semanal y registro" action={<LinkButton href={`/trainings/new?date=${start < today && today <= end ? today : start}`}>+ Nuevo entrenamiento</LinkButton>} />
 
       <div className="mb-3 flex items-center justify-between gap-2">
-        <Link href={`/trainings?week=${shift(start, -7)}`} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-surface">← Semana anterior</Link>
+        <Link href={`/trainings?week=${shift(start, -7)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-card">← Semana anterior</Link>
         <div className="text-center text-sm font-medium">
           {formatDate(start, { weekday: undefined, year: undefined })} – {formatDate(end, { weekday: undefined })}
-          <Link href="/trainings" className="ml-2 text-xs text-brand hover:underline">Hoy</Link>
+          <Link href="/trainings" className="ml-2 text-xs text-primary hover:underline">Hoy</Link>
         </div>
-        <Link href={`/trainings?week=${shift(start, 7)}`} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-surface">Semana siguiente →</Link>
+        <Link href={`/trainings?week=${shift(start, 7)}`} className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-card">Semana siguiente →</Link>
       </div>
 
       <div className="grid gap-2 md:grid-cols-7">
@@ -67,17 +67,17 @@ export default async function TrainingsPage({ searchParams }: PageProps<"/traini
           const day = shift(start, i);
           const items = rows.filter((r) => r.date === day);
           return (
-            <div key={day} className={`min-h-28 rounded-xl border bg-surface p-2 ${day === today ? "border-brand" : "border-line"}`}>
+            <div key={day} className={`min-h-28 rounded-xl border bg-card p-2 ${day === today ? "border-primary" : "border-border"}`}>
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="font-semibold">{name} {Number(day.slice(8))}</span>
-                <Link href={`/trainings/new?date=${day}`} className="rounded px-1 text-muted hover:bg-canvas" aria-label="Agregar">+</Link>
+                <Link href={`/trainings/new?date=${day}`} className="rounded px-1 text-muted-foreground hover:bg-background" aria-label="Agregar">+</Link>
               </div>
               <div className="space-y-1.5">
                 {items.map((t) => (
-                  <Link key={t.id} href={`/trainings/${t.id}`} className={`block rounded-lg border p-2 text-xs hover:border-brand ${t.status === "cancelled" ? "border-line opacity-50 line-through" : t.status === "completed" ? "border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950" : "border-line bg-canvas"}`}>
+                  <Link key={t.id} href={`/trainings/${t.id}`} className={`block rounded-lg border p-2 text-xs hover:border-primary ${t.status === "cancelled" ? "border-border opacity-50 line-through" : t.status === "completed" ? "border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950" : "border-border bg-background"}`}>
                     <div className="font-semibold">{formatTime(t.start_time)}{t.end_time ? `–${formatTime(t.end_time)}` : ""}</div>
                     <div className="truncate">{t.training_teams.map((tt) => tt.team?.category).filter(Boolean).join(", ") || "Sin categoría"}</div>
-                    {t.location && <div className="truncate text-muted">{t.location}</div>}
+                    {t.location && <div className="truncate text-muted-foreground">{t.location}</div>}
                   </Link>
                 ))}
               </div>
@@ -88,18 +88,18 @@ export default async function TrainingsPage({ searchParams }: PageProps<"/traini
 
       <h2 className="mb-3 mt-8 font-semibold">Últimos entrenamientos realizados</h2>
       {done.length === 0 ? (
-        <p className="text-sm text-muted">Aún no hay entrenamientos marcados como realizados.</p>
+        <p className="text-sm text-muted-foreground">Aún no hay entrenamientos marcados como realizados.</p>
       ) : (
         <div className="space-y-2">
           {done.map((t) => (
-            <Link key={t.id} href={`/trainings/${t.id}`} className="block rounded-xl border border-line bg-surface p-3 hover:border-brand">
+            <Link key={t.id} href={`/trainings/${t.id}`} className="block rounded-xl border border-border bg-card p-3 hover:border-primary">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-medium">{formatDate(t.date)}</span>
-                <span className="text-muted">{formatTime(t.start_time)}</span>
+                <span className="text-muted-foreground">{formatTime(t.start_time)}</span>
                 {t.training_teams.map((tt) => tt.team && <Badge key={tt.team.id} tone="brand">{tt.team.name}</Badge>)}
                 <span className="ml-auto"><Badge tone="green">{trainingStatusLabel(t.status)}</Badge></span>
               </div>
-              {t.notes && <p className="mt-1 line-clamp-2 text-sm text-muted">{t.notes}</p>}
+              {t.notes && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{t.notes}</p>}
             </Link>
           ))}
         </div>

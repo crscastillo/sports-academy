@@ -43,15 +43,15 @@ export function TrainingForm({
       </div>
 
       <fieldset>
-        <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Categorías que entrenan</legend>
+        <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Categorías que entrenan</legend>
         <div className="flex flex-wrap gap-2">
           {teams.map((t) => (
-            <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/10">
+            <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
               <input type="checkbox" name="team_id" value={t.id} defaultChecked={sel.has(t.id)} className="accent-[var(--brand)]" />
-              {t.name} <span className="text-xs text-muted">{t.category}</span>
+              {t.name} <span className="text-xs text-muted-foreground">{t.category}</span>
             </label>
           ))}
-          {teams.length === 0 && <p className="text-sm text-muted">Primero creá equipos.</p>}
+          {teams.length === 0 && <p className="text-sm text-muted-foreground">Primero creá equipos.</p>}
         </div>
       </fieldset>
 

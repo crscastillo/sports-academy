@@ -49,18 +49,18 @@ export default async function DonationsPage() {
             const got = l.donation_items.reduce((s, i) => s + Math.min(i.quantity_needed, i.donation_pledges.reduce((a, p) => a + p.quantity, 0)), 0);
             const pct = need ? Math.round((got / need) * 100) : 0;
             return (
-              <Link key={l.id} href={`/donations/${l.id}`} className="block rounded-xl border border-line bg-surface p-4 shadow-sm hover:border-brand">
+              <Link key={l.id} href={`/donations/${l.id}`} className="block rounded-xl border border-border bg-card p-4 shadow-sm hover:border-primary">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold">{l.title}</div>
-                    <div className="text-sm text-muted">{l.matchday ? `${formatDate(l.matchday.date)} · ${l.matchday.venue}` : "Sin jornada"}</div>
+                    <div className="text-sm text-muted-foreground">{l.matchday ? `${formatDate(l.matchday.date)} · ${l.matchday.venue}` : "Sin jornada"}</div>
                   </div>
                   {l.is_open ? <Badge tone="green">Abierta</Badge> : <Badge>Cerrada</Badge>}
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas">
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-background">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                 </div>
-                <div className="mt-1 text-xs text-muted">{l.donation_items.length} artículos · {pct}% cubierto</div>
+                <div className="mt-1 text-xs text-muted-foreground">{l.donation_items.length} artículos · {pct}% cubierto</div>
               </Link>
             );
           })}

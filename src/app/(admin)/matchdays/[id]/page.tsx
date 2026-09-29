@@ -56,10 +56,10 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
           <>
             {formatDate(matchday.date, { weekday: "long" })} · {matchday.venue}
             {matchday.address && <> · {matchday.address}</>} ·{" "}
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-brand hover:underline">Mapa</a>
+            <a href={mapsUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">Mapa</a>
           </>
         }
-        action={<Link href="/matchdays" className="text-sm text-muted hover:underline">← Jornadas</Link>}
+        action={<Link href="/matchdays" className="text-sm text-muted-foreground hover:underline">← Jornadas</Link>}
       />
 
       <div className={`mb-6 grid grid-cols-2 gap-3 ${matchday.is_home ? "sm:grid-cols-4" : "sm:grid-cols-5"}`}>
@@ -73,12 +73,12 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
       </div>
 
       <Card title="Link de convocatoria para padres" className="mb-6">
-        <p className="mb-3 text-sm text-muted">
+        <p className="mb-3 text-sm text-muted-foreground">
           Compartí este enlace: los padres buscan a su atleta, confirman asistencia e indican si usan la buseta o llegan por sus medios. No requiere cuenta.
         </p>
         <ShareLink path={`/c/${matchday.share_token}`} label="Copiar link" />
         <form action={regenerateShareToken.bind(null, id)} className="mt-2">
-          <button className="text-xs text-muted hover:underline">Generar nuevo link (invalida el anterior)</button>
+          <button className="text-xs text-muted-foreground hover:underline">Generar nuevo link (invalida el anterior)</button>
         </form>
       </Card>
 
@@ -104,7 +104,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
           </Card>
 
           {rows.length === 0 ? (
-            <p className="text-sm text-muted">Aún no hay partidos en esta jornada.</p>
+            <p className="text-sm text-muted-foreground">Aún no hay partidos en esta jornada.</p>
           ) : (
             rows.map((m) => <MatchBlock key={m.id} match={m} matchdayId={id} />)
           )}
@@ -113,19 +113,19 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
         <div className="space-y-6">
           {!matchday.is_home && (
           <Card title="Transporte (buseta)">
-            {trips.length === 0 && <p className="mb-3 text-sm text-muted">Sin busetas planificadas.</p>}
+            {trips.length === 0 && <p className="mb-3 text-sm text-muted-foreground">Sin busetas planificadas.</p>}
             <div className="space-y-3">
               {trips.map((t) => (
-                <div key={t.id} className="rounded-lg border border-line p-3 text-sm">
+                <div key={t.id} className="rounded-lg border border-border p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-semibold">🚌 {t.label}</div>
                     <form action={deleteBusTrip.bind(null, t.id, id)}><button className="text-xs text-red-600 hover:underline">Quitar</button></form>
                   </div>
-                  <div className="text-muted">
+                  <div className="text-muted-foreground">
                     Sale {formatTime(t.departure_time)} {t.departure_place ? `de ${t.departure_place}` : ""}
                     {t.return_time && <> · Regreso {formatTime(t.return_time)}</>}
                   </div>
-                  <div className="text-muted">
+                  <div className="text-muted-foreground">
                     {t.capacity ? `${t.capacity} campos` : "Capacidad sin definir"}
                     {t.driver && <> · {t.driver}</>}{t.driver_phone && <> ({t.driver_phone})</>}
                     {t.cost != null && <> · ₡{Number(t.cost).toLocaleString("es-CR")}</>}
@@ -135,7 +135,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
               ))}
             </div>
             <details className="mt-3">
-              <summary className="cursor-pointer text-sm font-medium text-brand">+ Agregar buseta</summary>
+              <summary className="cursor-pointer text-sm font-medium text-primary">+ Agregar buseta</summary>
               <form action={addBusTrip.bind(null, id)} className="mt-3 grid grid-cols-2 gap-2">
                 <Field label="Nombre" className="col-span-2"><Input name="label" defaultValue={`Buseta ${trips.length + 1}`} /></Field>
                 <Field label="Punto de salida" className="col-span-2"><Input name="departure_place" placeholder="Gimnasio de la academia" /></Field>
@@ -150,7 +150,7 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
               </form>
             </details>
 
-            <div className="mt-4 border-t border-line pt-3">
+            <div className="mt-4 border-t border-border pt-3">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="font-semibold">Pasajeros confirmados ({busRiders.size})</span>
                 {capacity > 0 && (
@@ -160,19 +160,19 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
                 )}
               </div>
               {busRiders.size === 0 ? (
-                <p className="text-sm text-muted">Nadie ha confirmado buseta aún.</p>
+                <p className="text-sm text-muted-foreground">Nadie ha confirmado buseta aún.</p>
               ) : (
                 <ol className="list-decimal space-y-0.5 pl-5 text-sm">
                   {[...busRiders.values()]
                     .sort((a, b) => a.player.last_name.localeCompare(b.player.last_name))
                     .map((c) => (
                       <li key={c.player.id}>
-                        {c.player.first_name} {c.player.last_name} <span className="text-xs text-muted">{c.match.team?.category}</span>
+                        {c.player.first_name} {c.player.last_name} <span className="text-xs text-muted-foreground">{c.match.team?.category}</span>
                       </li>
                     ))}
                 </ol>
               )}
-              <p className="mt-2 text-xs text-muted">{ownCount} llegan por sus propios medios.</p>
+              <p className="mt-2 text-xs text-muted-foreground">{ownCount} llegan por sus propios medios.</p>
             </div>
           </Card>
           )}
@@ -181,11 +181,11 @@ export default async function MatchdayPage({ params }: PageProps<"/matchdays/[id
             <Card title="Soda y ventas">
               {lists?.length ? (
                 <ul className="space-y-1 text-sm">
-                  {lists.map((l) => <li key={l.id}><Link href={`/donations/${l.id}`} className="text-brand hover:underline">{l.title}</Link></li>)}
+                  {lists.map((l) => <li key={l.id}><Link href={`/donations/${l.id}`} className="text-primary hover:underline">{l.title}</Link></li>)}
                 </ul>
               ) : (
                 <form action={createDonationListForMatchday.bind(null, id)}>
-                  <p className="mb-2 text-sm text-muted">Creá la lista de donaciones para que los padres se anoten.</p>
+                  <p className="mb-2 text-sm text-muted-foreground">Creá la lista de donaciones para que los padres se anoten.</p>
                   <SubmitButton variant="secondary">Crear lista de donaciones</SubmitButton>
                 </form>
               )}

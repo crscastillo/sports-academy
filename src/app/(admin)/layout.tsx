@@ -13,11 +13,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
       <main className="flex min-h-screen items-center justify-center p-6 text-center">
         <div className="max-w-sm space-y-3">
           <h1 className="text-xl font-bold">Sin acceso</h1>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted-foreground">
             La cuenta {user.email} no está registrada como personal de la academia. Pedí a un administrador que te agregue.
           </p>
           <form action="/auth/signout" method="post">
-            <button className="text-sm text-brand underline">Salir</button>
+            <button className="text-sm text-primary underline">Salir</button>
           </form>
         </div>
       </main>

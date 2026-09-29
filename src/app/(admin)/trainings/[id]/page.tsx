@@ -22,7 +22,7 @@ export default async function TrainingPage({ params }: PageProps<"/trainings/[id
     <>
       <PageHeader
         title={`Entrenamiento · ${formatDate(t.date)}`}
-        action={<Link href={`/trainings?week=${t.date}`} className="text-sm text-muted hover:underline">← Planificador</Link>}
+        action={<Link href={`/trainings?week=${t.date}`} className="text-sm text-muted-foreground hover:underline">← Planificador</Link>}
       />
       <Card>
         <TrainingForm

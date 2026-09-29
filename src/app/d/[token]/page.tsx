@@ -21,7 +21,7 @@ export default async function GuestDonationPage({ params }: PageProps<"/d/[token
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <header className="mb-5 rounded-2xl bg-brand p-5 text-white shadow">
+      <header className="mb-5 rounded-2xl bg-primary p-5 text-white shadow">
         <div className="text-sm opacity-90">🏀 Soda y ventas</div>
         <h1 className="text-2xl font-bold">{d.list.title}</h1>
         {d.matchday && (

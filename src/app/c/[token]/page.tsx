@@ -23,7 +23,7 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <header className="mb-5 rounded-2xl bg-brand p-5 text-white shadow">
+      <header className="mb-5 rounded-2xl bg-primary p-5 text-white shadow">
         <div className="text-sm opacity-90">🏀 Convocatoria</div>
         <h1 className="text-2xl font-bold">{md.title ?? md.venue}</h1>
         <div className="mt-1 text-sm">{formatDate(md.date, { weekday: "long" })}</div>
@@ -35,7 +35,7 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
       </header>
 
       {d.bus_trips.length > 0 && (
-        <section className="mb-5 rounded-xl border border-line bg-surface p-4">
+        <section className="mb-5 rounded-xl border border-border bg-card p-4">
           <h2 className="mb-2 font-semibold">🚌 Buseta</h2>
           <ul className="space-y-1 text-sm">
             {d.bus_trips.map((b, i) => (
@@ -49,7 +49,7 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
         </section>
       )}
 
-      <p className="mb-3 text-sm text-muted">Buscá a tu atleta y confirmá si asiste y cómo llega.</p>
+      <p className="mb-3 text-sm text-muted-foreground">Buscá a tu atleta y confirmá si asiste y cómo llega.</p>
       <CallupBoard token={token} matches={d.matches} />
     </main>
   );

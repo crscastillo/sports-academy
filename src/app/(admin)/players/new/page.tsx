@@ -13,7 +13,7 @@ export default async function NewPlayerPage({ searchParams }: PageProps<"/player
   const preselected = typeof sp.team === "string" ? [sp.team] : [];
   return (
     <>
-      <PageHeader title="Nuevo atleta" action={<Link href="/players" className="text-sm text-muted hover:underline">← Atletas</Link>} />
+      <PageHeader title="Nuevo atleta" action={<Link href="/players" className="text-sm text-muted-foreground hover:underline">← Atletas</Link>} />
       <Card>
         <PlayerForm action={createPlayer} teams={teams ?? []} selectedTeamIds={preselected} submitLabel="Registrar atleta" />
       </Card>

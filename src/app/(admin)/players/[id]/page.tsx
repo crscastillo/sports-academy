@@ -37,7 +37,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
       <PageHeader
         title={`${p.first_name} ${p.last_name}`}
         subtitle={<>{p.jersey_number != null && <>#{p.jersey_number} · </>}{ageOn(p.birth_date) ?? "?"} años</>}
-        action={<Link href="/players" className="text-sm text-muted hover:underline">← Atletas</Link>}
+        action={<Link href="/players" className="text-sm text-muted-foreground hover:underline">← Atletas</Link>}
       />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Estatura" value={p.height_cm ? `${p.height_cm} cm` : "—"} />
@@ -45,7 +45,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
         <Stat label="Envergadura" value={p.wingspan_cm ? `${p.wingspan_cm} cm` : "—"} />
         <Stat label="Asistencia a partidos" value={marked ? `${attended}/${marked}` : "—"} />
       </div>
-      {ratio && <p className="-mt-3 mb-6 text-xs text-muted">Diferencia envergadura − estatura: {ratio} cm</p>}
+      {ratio && <p className="-mt-3 mb-6 text-xs text-muted-foreground">Diferencia envergadura − estatura: {ratio} cm</p>}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title="Datos del atleta" className="lg:col-span-2">
@@ -60,7 +60,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
         <div className="space-y-6">
           <Card title="Convocatorias">
             {rows.length === 0 ? (
-              <p className="text-sm text-muted">Sin convocatorias.</p>
+              <p className="text-sm text-muted-foreground">Sin convocatorias.</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {rows.slice(0, 15).map((c) => (

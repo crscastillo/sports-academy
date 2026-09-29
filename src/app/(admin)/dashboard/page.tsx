@@ -41,7 +41,7 @@ export default async function Dashboard() {
           {matchdays.length === 0 ? (
             <Empty>Sin jornadas próximas.</Empty>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-border">
               {matchdays.map((m) => {
                 const c = m.matches.flatMap((x) => x.callups);
                 const pend = c.filter((x) => x.status === "pending").length;
@@ -51,7 +51,7 @@ export default async function Dashboard() {
                   <li key={m.id} className="py-2.5">
                     <Link href={`/matchdays/${m.id}`} className="flex items-center justify-between gap-2 hover:underline">
                       <span>
-                        <span className="text-sm font-semibold text-brand">{formatDate(m.date, { year: undefined })}</span>{" "}
+                        <span className="text-sm font-semibold text-primary">{formatDate(m.date, { year: undefined })}</span>{" "}
                         <span className="text-sm">{m.title ?? m.venue}</span>
                       </span>
                       <span className="flex shrink-0 gap-1">
@@ -71,13 +71,13 @@ export default async function Dashboard() {
           {trainings.length === 0 ? (
             <Empty>Sin entrenamientos planificados.</Empty>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-border">
               {trainings.map((t) => (
                 <li key={t.id} className="py-2.5">
                   <Link href={`/trainings/${t.id}`} className="flex items-center justify-between gap-2 text-sm hover:underline">
                     <span>
                       <span className="font-semibold">{formatDate(t.date, { year: undefined })}</span> · {formatTime(t.start_time)}
-                      {t.location && <span className="text-muted"> · {t.location}</span>}
+                      {t.location && <span className="text-muted-foreground"> · {t.location}</span>}
                     </span>
                     <span className="flex gap-1">
                       {t.training_teams.map((tt, i) => tt.team && <Badge key={i}>{tt.team.category}</Badge>)}

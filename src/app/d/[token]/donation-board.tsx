@@ -37,10 +37,10 @@ function PledgeForm({ token, item, onDone }: { token: string; item: GuestItem; o
   const [pending, start] = useTransition();
   const [error, setError] = useState(false);
 
-  const input = "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm";
+  const input = "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm";
   return (
     <form
-      className="mt-3 grid gap-2 rounded-lg bg-canvas p-3 sm:grid-cols-2"
+      className="mt-3 grid gap-2 rounded-lg bg-background p-3 sm:grid-cols-2"
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => {
@@ -59,11 +59,11 @@ function PledgeForm({ token, item, onDone }: { token: string; item: GuestItem; o
       <label className="flex items-center gap-2 text-sm">
         Cantidad
         <input type="number" min={1} max={1000} required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={`${input} w-24`} />
-        <span className="text-muted">{item.unit}</span>
+        <span className="text-muted-foreground">{item.unit}</span>
       </label>
       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Comentario (opcional)" className={`${input} sm:col-span-2`} />
       {error && <p className="text-xs text-red-600 sm:col-span-2">No se pudo guardar. Intentá de nuevo.</p>}
-      <button disabled={pending} className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 sm:col-span-2">
+      <button disabled={pending} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50 sm:col-span-2">
         {pending ? "Guardando…" : "Me anoto"}
       </button>
     </form>
@@ -75,7 +75,7 @@ export function DonationBoard({ token, items, isOpen }: { token: string; items: 
   const [thanks, setThanks] = useState<string | null>(null);
   const kinds = [...new Set(items.map((i) => i.kind))];
 
-  if (items.length === 0) return <p className="text-center text-sm text-muted">La lista aún no tiene artículos.</p>;
+  if (items.length === 0) return <p className="text-center text-sm text-muted-foreground">La lista aún no tiene artículos.</p>;
 
   return (
     <div className="space-y-6">
@@ -87,24 +87,24 @@ export function DonationBoard({ token, items, isOpen }: { token: string; items: 
               const full = i.pledged >= i.quantity_needed;
               const pct = Math.min(100, Math.round((i.pledged / i.quantity_needed) * 100));
               return (
-                <div key={i.id} className={`rounded-xl border bg-surface p-4 shadow-sm ${full ? "border-green-300 dark:border-green-900" : "border-line"}`}>
+                <div key={i.id} className={`rounded-xl border bg-card p-4 shadow-sm ${full ? "border-green-300 dark:border-green-900" : "border-border"}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-medium">{i.name}</div>
-                      {i.notes && <div className="text-xs text-muted">{i.notes}</div>}
+                      {i.notes && <div className="text-xs text-muted-foreground">{i.notes}</div>}
                     </div>
                     <div className="text-right text-sm">
                       <span className={full ? "font-semibold text-green-600" : "font-semibold"}>{i.pledged}</span>
-                      <span className="text-muted"> / {i.quantity_needed} {i.unit ?? ""}</span>
+                      <span className="text-muted-foreground"> / {i.quantity_needed} {i.unit ?? ""}</span>
                     </div>
                   </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-canvas">
-                    <div className={`h-full rounded-full ${full ? "bg-green-500" : "bg-brand"}`} style={{ width: `${pct}%` }} />
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+                    <div className={`h-full rounded-full ${full ? "bg-green-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
                   </div>
                   {i.pledges.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {i.pledges.map((p, idx) => (
-                        <span key={idx} className="rounded-full bg-canvas px-2 py-0.5 text-xs">
+                        <span key={idx} className="rounded-full bg-background px-2 py-0.5 text-xs">
                           {p.parent_name}{p.player_name ? ` (${p.player_name})` : ""} · {p.quantity}
                         </span>
                       ))}
@@ -112,7 +112,7 @@ export function DonationBoard({ token, items, isOpen }: { token: string; items: 
                   )}
                   {thanks === i.id && <p className="mt-2 text-sm font-medium text-green-600">¡Gracias! Quedaste anotado 🙌</p>}
                   {isOpen && open !== i.id && (
-                    <button onClick={() => setOpen(i.id)} className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-medium ${full ? "border border-line text-muted" : "bg-brand text-white hover:bg-brand-dark"}`}>
+                    <button onClick={() => setOpen(i.id)} className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-medium ${full ? "border border-border text-muted-foreground" : "bg-primary text-white hover:bg-primary/90"}`}>
                       {full ? "Ya está cubierto · anotarme igual" : "Yo lo traigo"}
                     </button>
                   )}

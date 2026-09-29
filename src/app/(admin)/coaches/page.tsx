@@ -65,15 +65,15 @@ export default async function CoachesPage() {
                     <SubmitButton variant="secondary">Guardar</SubmitButton>
                   </div>
                 </form>
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
                   {invited ? (
-                    <span className="text-xs text-muted">Ya puede ingresar con su correo</span>
+                    <span className="text-xs text-muted-foreground">Ya puede ingresar con su correo</span>
                   ) : c.email ? (
                     <form action={inviteCoach.bind(null, c.id)}>
                       <SubmitButton variant="secondary" className="!py-1.5 text-xs">Invitar</SubmitButton>
                     </form>
                   ) : (
-                    <span className="text-xs text-muted">Agregá un correo para invitar</span>
+                    <span className="text-xs text-muted-foreground">Agregá un correo para invitar</span>
                   )}
                   <form action={deleteCoach.bind(null, c.id)}>
                     <ConfirmSubmit message="¿Eliminar este entrenador?">Eliminar</ConfirmSubmit>

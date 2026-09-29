@@ -31,13 +31,13 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="brand">{m.team?.category}</Badge>
             <span className="font-semibold">{m.team?.name}</span>
-            <span className="text-muted">vs</span>
+            <span className="text-muted-foreground">vs</span>
             <span className="font-semibold">{m.opponent}</span>
           </div>
-          <div className="mt-1 text-sm text-muted">
+          <div className="mt-1 text-sm text-muted-foreground">
             {formatTime(m.start_time)} {m.court && `· ${m.court}`} · {genderLabel(m.team?.gender)} · {conf}/{callups.length} confirmados
             {m.score_for != null && m.score_against != null && (
-              <span className="ml-2 font-semibold text-ink">
+              <span className="ml-2 font-semibold text-foreground">
                 {m.score_for}–{m.score_against} {m.score_for > m.score_against ? "✅" : m.score_for < m.score_against ? "❌" : "➖"}
               </span>
             )}
@@ -48,16 +48,16 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
       {callups.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-muted">
+            <thead className="text-xs uppercase text-muted-foreground">
               <tr><th className="py-1.5 pr-2">#</th><th className="pr-2">Atleta</th><th className="pr-2">Confirmación</th><th className="pr-2">Asistió</th><th /></tr>
             </thead>
             <tbody>
               {callups.map((c) => (
-                <tr key={c.id} className="border-t border-line align-top">
+                <tr key={c.id} className="border-t border-border align-top">
                   <td className="py-2 pr-2 font-mono">{c.player.jersey_number ?? "—"}</td>
                   <td className="py-2 pr-2">
                     <Link href={`/players/${c.player.id}`} className="hover:underline">{c.player.first_name} {c.player.last_name}</Link>
-                    {c.guest_note && <div className="text-xs text-muted">“{c.guest_note}”</div>}
+                    {c.guest_note && <div className="text-xs text-muted-foreground">“{c.guest_note}”</div>}
                   </td>
                   <td className="py-2 pr-2">
                     <AutoSubmitForm key={`${c.status}-${c.transport}`} action={setCallupResponse.bind(null, c.id, matchdayId)} className="flex flex-wrap items-center gap-1">
@@ -65,7 +65,7 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
                         {Object.entries(CALLUP_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                       </select>
                       {c.status === "confirmed" && (
-                        <select name="transport" defaultValue={c.transport ?? ""} className="rounded-md border border-line bg-surface px-1.5 py-1 text-xs">
+                        <select name="transport" defaultValue={c.transport ?? ""} className="rounded-md border border-border bg-card px-1.5 py-1 text-xs">
                           <option value="">¿Transporte?</option>
                           {Object.entries(TRANSPORT).map(([v, l]) => <option key={v} value={v}>{v === "bus" ? "🚌 " : "🚗 "}{l}</option>)}
                         </select>
@@ -75,16 +75,16 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
                   <td className="py-2 pr-2">
                     <div className="flex gap-1">
                       <form action={setAttendance.bind(null, c.id, matchdayId, c.attended === true ? null : true)}>
-                        <button title="Asistió" className={`rounded-md border px-2 py-0.5 text-xs ${c.attended === true ? "border-green-500 bg-green-500 text-white" : "border-line"}`}>✓</button>
+                        <button title="Asistió" className={`rounded-md border px-2 py-0.5 text-xs ${c.attended === true ? "border-green-500 bg-green-500 text-white" : "border-border"}`}>✓</button>
                       </form>
                       <form action={setAttendance.bind(null, c.id, matchdayId, c.attended === false ? null : false)}>
-                        <button title="Ausente" className={`rounded-md border px-2 py-0.5 text-xs ${c.attended === false ? "border-red-500 bg-red-500 text-white" : "border-line"}`}>✗</button>
+                        <button title="Ausente" className={`rounded-md border px-2 py-0.5 text-xs ${c.attended === false ? "border-red-500 bg-red-500 text-white" : "border-border"}`}>✗</button>
                       </form>
                     </div>
                   </td>
                   <td className="py-2 text-right">
                     <form action={removeCallup.bind(null, c.id, matchdayId)}>
-                      <button className="text-xs text-muted hover:text-red-600" title="Quitar de la convocatoria">✕</button>
+                      <button className="text-xs text-muted-foreground hover:text-red-600" title="Quitar de la convocatoria">✕</button>
                     </form>
                   </td>
                 </tr>
@@ -95,10 +95,10 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
       )}
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <details className="rounded-lg border border-line p-3">
+        <details className="rounded-lg border border-border p-3">
           <summary className="cursor-pointer text-sm font-medium">Convocar más atletas ({notCalled.length} disponibles)</summary>
           {notCalled.length === 0 ? (
-            <p className="mt-2 text-xs text-muted">Todo el plantel activo está convocado.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Todo el plantel activo está convocado.</p>
           ) : (
             <form action={callUpPlayers.bind(null, m.id, matchdayId)} className="mt-2 space-y-2">
               <div className="max-h-48 space-y-1 overflow-y-auto">
@@ -113,7 +113,7 @@ export function MatchBlock({ match: m, matchdayId }: { match: MatchRow; matchday
             </form>
           )}
         </details>
-        <details className="rounded-lg border border-line p-3">
+        <details className="rounded-lg border border-border p-3">
           <summary className="cursor-pointer text-sm font-medium">Editar partido / resultado</summary>
           <form action={updateMatch.bind(null, m.id, matchdayId)} className="mt-2 grid grid-cols-2 gap-2">
             <Input name="opponent" defaultValue={m.opponent} placeholder="Rival" className="col-span-2" />

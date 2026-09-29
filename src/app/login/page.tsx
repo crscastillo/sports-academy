@@ -12,11 +12,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const isRegister = sp.mode === "register";
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
+      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-2xl">🏀</div>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-2xl">🏀</div>
           <h1 className="text-xl font-bold">Sports Academy</h1>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted-foreground">
             {isRegister ? "Creá tu academia" : "Acceso para entrenadores y administradores"}
           </p>
         </div>
@@ -41,18 +41,18 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </form>
         )}
 
-        <p className="text-center text-sm text-muted">
+        <p className="text-center text-sm text-muted-foreground">
           {isRegister ? (
             <>
               ¿Ya tenés cuenta?{" "}
-              <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-brand underline">
+              <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-primary underline">
                 Ingresá
               </Link>
             </>
           ) : (
             <>
               ¿No tenés cuenta?{" "}
-              <Link href={`/login?mode=register&next=${encodeURIComponent(next)}`} className="text-brand underline">
+              <Link href={`/login?mode=register&next=${encodeURIComponent(next)}`} className="text-primary underline">
                 Registrate
               </Link>
             </>

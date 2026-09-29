@@ -49,15 +49,15 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
           <label className="flex items-center gap-2 px-2 text-sm">
             <input type="checkbox" name="inactive" value="1" defaultChecked={showInactive} /> Incluir inactivos
           </label>
-          <button className="rounded-lg border border-line px-3 py-2 text-sm hover:bg-canvas">Filtrar</button>
+          <button className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-background">Filtrar</button>
         </form>
       </Card>
       {players.length === 0 ? (
         <Empty>No hay atletas que coincidan.</Empty>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-canvas text-xs uppercase text-muted">
+            <thead className="bg-background text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">#</th><th className="px-3">Nombre</th><th className="px-3">Cédula</th>
                 <th className="px-3">Edad</th><th className="px-3">Estatura</th><th className="px-3">Pos.</th><th className="px-3">Equipos</th>
@@ -65,13 +65,13 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
             </thead>
             <tbody>
               {players.map((p) => (
-                <tr key={p.id} className="border-t border-line hover:bg-canvas/60">
+                <tr key={p.id} className="border-t border-border hover:bg-background/60">
                   <td className="px-3 py-2 font-mono">{p.jersey_number ?? "—"}</td>
                   <td className="px-3">
                     <Link href={`/players/${p.id}`} className="font-medium hover:underline">{p.first_name} {p.last_name}</Link>
                     {!p.active && <span className="ml-2"><Badge tone="red">Inactivo</Badge></span>}
                   </td>
-                  <td className="px-3 text-muted">{p.national_id ?? "—"}</td>
+                  <td className="px-3 text-muted-foreground">{p.national_id ?? "—"}</td>
                   <td className="px-3">{ageOn(p.birth_date) ?? "—"}</td>
                   <td className="px-3">{p.height_cm ? `${p.height_cm} cm` : "—"}</td>
                   <td className="px-3">{p.positions.join(", ") || "—"}</td>

@@ -17,12 +17,12 @@ function MatchdayCard({ m }: { m: Row }) {
   const bus = callups.filter((c) => c.status === "confirmed" && c.transport === "bus").length;
   const cats = [...new Set(m.matches.map((x) => x.team?.category).filter(Boolean))];
   return (
-    <Link href={`/matchdays/${m.id}`} className="block rounded-xl border border-line bg-surface p-4 shadow-sm hover:border-brand">
+    <Link href={`/matchdays/${m.id}`} className="block rounded-xl border border-border bg-card p-4 shadow-sm hover:border-primary">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <div className="text-sm font-semibold text-brand">{formatDate(m.date)}</div>
+          <div className="text-sm font-semibold text-primary">{formatDate(m.date)}</div>
           <div className="font-semibold">{m.title ?? m.venue}</div>
-          <div className="text-sm text-muted">{m.venue}{m.address ? ` · ${m.address}` : ""}</div>
+          <div className="text-sm text-muted-foreground">{m.venue}{m.address ? ` · ${m.address}` : ""}</div>
         </div>
         {m.is_home ? <Badge tone="brand">En casa</Badge> : <Badge>Visita</Badge>}
       </div>

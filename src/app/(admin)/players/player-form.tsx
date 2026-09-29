@@ -64,7 +64,7 @@ export function PlayerForm({
         <legend className="mb-2 text-sm font-semibold">Posiciones</legend>
         <div className="flex flex-wrap gap-2">
           {POSITIONS.map((p) => (
-            <label key={p.value} className="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/10">
+            <label key={p.value} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
               <input type="checkbox" name="positions" value={p.value} defaultChecked={player?.positions?.includes(p.value)} className="accent-[var(--brand)]" />
               {p.label}
             </label>
@@ -75,13 +75,13 @@ export function PlayerForm({
       <fieldset>
         <legend className="mb-2 text-sm font-semibold">Equipos</legend>
         {teams.length === 0 ? (
-          <p className="text-sm text-muted">Primero creá equipos.</p>
+          <p className="text-sm text-muted-foreground">Primero creá equipos.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {teams.map((t) => (
-              <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/10">
+              <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
                 <input type="checkbox" name="team_id" value={t.id} defaultChecked={sel.has(t.id)} className="accent-[var(--brand)]" />
-                {t.name} <span className="text-xs text-muted">{t.category}</span>
+                {t.name} <span className="text-xs text-muted-foreground">{t.category}</span>
               </label>
             ))}
           </div>
