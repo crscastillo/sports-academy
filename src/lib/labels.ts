@@ -21,6 +21,12 @@ export const CATEGORIES = [
   "Master",
 ] as const;
 
+// Age cap for a "U<n>" category, or null for the open categories (Master, 2da, 1era, Juegos Nacionales).
+export function categoryAgeCap(category: string): number | null {
+  const m = /^U(\d+)$/.exec(category);
+  return m ? Number(m[1]) : null;
+}
+
 export const genderLabel = (g?: string | null) =>
   GENDERS.find((x) => x.value === g)?.label ?? "—";
 

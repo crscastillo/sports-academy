@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Card, PageHeader, Stat } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/client";
-import { ageOn, CALLUP_STATUS, formatDate } from "@/lib/labels";
+import { ageOn, CALLUP_STATUS, categoryAgeCap, formatDate } from "@/lib/labels";
 import { deletePlayer, updatePlayer } from "../actions";
 import { PlayerForm, type Player } from "../player-form";
 
@@ -17,7 +17,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const supabase = await createClient();
   const [{ data: player }, { data: teams }, { data: links }, { data: callups }] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).single(),
-    supabase.from("teams").select("id, name, category").order("category"),
+    supabase.from("teams").select("id, name, category, gender").order("category"),
     supabase.from("team_players").select("team_id").eq("player_id", id),
     supabase
       .from("callups")
@@ -31,6 +31,16 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const marked = rows.filter((c) => c.attended !== null).length;
   const p = player as Player;
   const ratio = p.height_cm && p.wingspan_cm ? (p.wingspan_cm - p.height_cm).toFixed(1) : null;
+
+  const age = ageOn(p.birth_date);
+  const selectedTeamIds = (links ?? []).map((l) => l.team_id);
+  const eligibleTeams = (teams ?? []).filter((t) => {
+    if (selectedTeamIds.includes(t.id)) return true;
+    const cap = categoryAgeCap(t.category);
+    const ageOk = cap == null || age == null || cap >= age - 1;
+    const genderOk = !p.gender || t.gender === "mixed" || t.gender === p.gender;
+    return ageOk && genderOk;
+  });
 
   return (
     <>
@@ -52,8 +62,8 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
           <PlayerForm
             action={updatePlayer.bind(null, id)}
             player={p}
-            teams={teams ?? []}
-            selectedTeamIds={(links ?? []).map((l) => l.team_id)}
+            teams={eligibleTeams}
+            selectedTeamIds={selectedTeamIds}
             submitLabel="Guardar cambios"
           />
         </Card>
