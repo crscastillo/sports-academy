@@ -1,29 +1,51 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Badge, Card, Empty, PageHeader } from "@/components/ui";
-import { genderLabel } from "@/lib/labels";
+import { Badge, Button, Empty, PageHeader } from "@/components/ui";
+import { ResponsiveDialog } from "@/components/elements/responsive-dialog";
+import { GENDERS, genderLabel } from "@/lib/labels";
 import { createTeam } from "./actions";
 import { TeamForm } from "./team-form";
 
 export const metadata = { title: "Equipos" };
 
-export default async function TeamsPage() {
+export default async function TeamsPage({ searchParams }: PageProps<"/teams">) {
+  const sp = await searchParams;
+  const gender = typeof sp.gender === "string" ? sp.gender : "";
+
   const supabase = await createClient();
+  let query = supabase
+    .from("teams")
+    .select("id, name, category, gender, season, coach:coaches(full_name), team_players(count)")
+    .order("category")
+    .order("name");
+  if (gender) query = query.eq("gender", gender);
   const [{ data: teams }, { data: coaches }] = await Promise.all([
-    supabase
-      .from("teams")
-      .select("id, name, category, gender, season, coach:coaches(full_name), team_players(count)")
-      .order("category")
-      .order("name"),
+    query,
     supabase.from("coaches").select("id, full_name").order("full_name"),
   ]);
 
   return (
     <>
-      <PageHeader title="Equipos" subtitle="Categorías por edad y género" />
-      <Card title="Nuevo equipo" className="mb-6">
-        <TeamForm action={createTeam} coaches={coaches ?? []} submitLabel="Crear equipo" />
-      </Card>
+      <PageHeader
+        title="Equipos"
+        subtitle="Categorías por edad y género"
+        action={
+          <ResponsiveDialog trigger={<Button>+ Nuevo equipo</Button>} title="Nuevo equipo">
+            <TeamForm action={createTeam} coaches={coaches ?? []} submitLabel="Crear equipo" compact />
+          </ResponsiveDialog>
+        }
+      />
+      <div className="mb-4 flex flex-wrap gap-1">
+        {[{ value: "", label: "Todos" }, ...GENDERS].map((g) => (
+          <Link
+            key={g.value}
+            href={g.value ? `/teams?gender=${g.value}` : "/teams"}
+            className={`rounded-lg px-3 py-1.5 text-sm ${gender === g.value ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-background"}`}
+          >
+            {g.label}
+          </Link>
+        ))}
+      </div>
       {!teams?.length ? (
         <Empty>Aún no hay equipos.</Empty>
       ) : (
