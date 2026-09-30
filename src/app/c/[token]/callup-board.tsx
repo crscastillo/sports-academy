@@ -12,6 +12,12 @@ export type GuestMatch = {
   callups: { id: string; player_id: string; player_name: string; jersey_number: number | null; status: string }[];
 };
 
+export function filterToAllowed(matches: GuestMatch[], allowedPlayerIds: Set<string>): GuestMatch[] {
+  return matches
+    .map((m) => ({ ...m, callups: m.callups.filter((c) => allowedPlayerIds.has(c.player_id)) }))
+    .filter((m) => m.callups.length > 0);
+}
+
 export type GuestPlayer = { player_id: string; player_name: string; jersey_number: number | null; transport: string | null };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -117,30 +123,45 @@ function TransportRow({ token, player, needsTransport }: { token: string; player
   );
 }
 
-export function CallupBoard({ token, matches, players, isHome }: { token: string; matches: GuestMatch[]; players: GuestPlayer[]; isHome: boolean }) {
+export function CallupBoard({
+  token,
+  matches,
+  players,
+  isHome,
+  allowedPlayerIds,
+}: {
+  token: string;
+  matches: GuestMatch[];
+  players: GuestPlayer[];
+  isHome: boolean;
+  allowedPlayerIds: Set<string>;
+}) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
+  const ownMatches = useMemo(() => filterToAllowed(matches, allowedPlayerIds), [matches, allowedPlayerIds]);
+  const ownPlayers = useMemo(() => players.filter((p) => allowedPlayerIds.has(p.player_id)), [players, allowedPlayerIds]);
+
   const goingPlayerIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const m of matches) for (const c of m.callups) if (c.status === "confirmed") ids.add(c.player_id);
+    for (const m of ownMatches) for (const c of m.callups) if (c.status === "confirmed") ids.add(c.player_id);
     return ids;
-  }, [matches]);
+  }, [ownMatches]);
 
   const nq = norm(q.trim());
   const filteredMatches = useMemo(() => {
-    const withSortedCallups = matches.map((m) => ({ ...m, callups: [...m.callups].sort(byName) }));
+    const withSortedCallups = ownMatches.map((m) => ({ ...m, callups: [...m.callups].sort(byName) }));
     if (!nq) return withSortedCallups;
     return withSortedCallups
       .map((m) => ({ ...m, callups: m.callups.filter((c) => norm(c.player_name).includes(nq)) }))
       .filter((m) => m.callups.length > 0);
-  }, [nq, matches]);
+  }, [nq, ownMatches]);
   const filteredPlayers = useMemo(() => {
-    const sorted = [...players].sort(byName);
+    const sorted = [...ownPlayers].sort(byName);
     if (!nq) return sorted;
     return sorted.filter((p) => norm(p.player_name).includes(nq));
-  }, [nq, players]);
+  }, [nq, ownPlayers]);
 
   return (
     <div className="space-y-4">
@@ -164,7 +185,11 @@ export function CallupBoard({ token, matches, players, isHome }: { token: string
         </section>
       )}
 
-      {filteredMatches.length === 0 && <p className="text-center text-sm text-muted-foreground">No se encontró ningún atleta convocado con ese nombre.</p>}
+      {filteredMatches.length === 0 && (
+        <p className="text-center text-sm text-muted-foreground">
+          {ownMatches.length === 0 ? "Tu(s) atleta(s) no está(n) convocado(s) en esta jornada." : "No se encontró ningún atleta convocado con ese nombre."}
+        </p>
+      )}
       {filteredMatches.map((m) => (
         <section key={m.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="mb-2">

@@ -1,9 +1,13 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getRepositories } from "@/lib/repositories";
 import { formatDate, formatTime } from "@/lib/labels";
 import { CallupBoard, type GuestMatch, type GuestPlayer } from "./callup-board";
+import { GuardianBadge, GuardianGate } from "./guardian-gate";
 
 export const metadata = { title: "Convocatoria", robots: { index: false } };
+
+const GUARDIAN_COOKIE = "sa_guardian";
 
 type Data = {
   matchday: { title: string | null; date: string; venue: string; address: string | null; is_home: boolean; notes: string | null };
@@ -12,6 +16,19 @@ type Data = {
   players: GuestPlayer[];
   matches: GuestMatch[];
 };
+
+function readGuardian(raw: string | undefined, rosterIds: Set<string>) {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { name?: unknown; playerIds?: unknown };
+    if (typeof parsed.name !== "string" || !Array.isArray(parsed.playerIds)) return null;
+    const playerIds = parsed.playerIds.filter((id): id is string => typeof id === "string" && rosterIds.has(id));
+    if (!parsed.name.trim() || playerIds.length === 0) return null;
+    return { name: parsed.name, playerIds };
+  } catch {
+    return null;
+  }
+}
 
 export default async function GuestCallupPage({ params }: PageProps<"/c/[token]">) {
   const { token } = await params;
@@ -22,6 +39,9 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
   const d = data as Data;
   const md = d.matchday;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([md.venue, md.address].filter(Boolean).join(", "))}`;
+
+  const rosterIds = new Set(d.players.map((p) => p.player_id));
+  const guardian = readGuardian((await cookies()).get(GUARDIAN_COOKIE)?.value, rosterIds);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -64,8 +84,15 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
         </section>
       )}
 
-      <p className="mb-3 text-sm text-muted-foreground">Buscá a tu atleta, confirmá si asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
-      <CallupBoard token={token} matches={d.matches} players={d.players} isHome={md.is_home} />
+      {guardian ? (
+        <>
+          <GuardianBadge token={token} name={guardian.name} />
+          <p className="mb-3 text-sm text-muted-foreground">Confirmá si tu atleta asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
+          <CallupBoard token={token} matches={d.matches} players={d.players} isHome={md.is_home} allowedPlayerIds={new Set(guardian.playerIds)} />
+        </>
+      ) : (
+        <GuardianGate token={token} players={d.players} />
+      )}
     </main>
   );
 }
