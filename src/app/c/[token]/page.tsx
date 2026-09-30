@@ -7,6 +7,7 @@ export const metadata = { title: "Convocatoria", robots: { index: false } };
 
 type Data = {
   matchday: { title: string | null; date: string; venue: string; address: string | null; is_home: boolean; notes: string | null };
+  donation_list: { title: string; share_token: string } | null;
   bus_trips: { label: string; departure_place: string | null; departure_time: string | null; return_time: string | null }[];
   players: GuestPlayer[];
   matches: GuestMatch[];
@@ -34,6 +35,19 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
         </div>
         {md.notes && <p className="mt-2 rounded-lg bg-white/15 p-2 text-sm">{md.notes}</p>}
       </header>
+
+      {md.is_home && (
+        <section className="mb-5 rounded-xl border border-border bg-card p-4">
+          <h2 className="mb-2 font-semibold">🥤 Soda y ventas</h2>
+          {d.donation_list ? (
+            <a href={`/d/${d.donation_list.share_token}`} className="text-sm text-primary underline">
+              Ver lista de donaciones: {d.donation_list.title}
+            </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">Todavía no hay una lista de donaciones creada para esta jornada.</p>
+          )}
+        </section>
+      )}
 
       {d.bus_trips.length > 0 && (
         <section className="mb-5 rounded-xl border border-border bg-card p-4">
