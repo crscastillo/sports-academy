@@ -152,13 +152,13 @@ export function CallupBoard({ token, matches, players, isHome }: { token: string
         className="w-full rounded-xl border border-border bg-card px-4 py-3 text-base shadow-sm outline-none focus:border-primary"
       />
 
-      {filteredPlayers.length > 0 && (
+      {!isHome && filteredPlayers.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <h2 className="mb-1 font-semibold">🚌 ¿Cómo llega tu atleta?</h2>
           <p className="mb-2 text-xs text-muted-foreground">Una sola respuesta por atleta para toda la jornada, aunque tenga más de un partido.</p>
           <ul className="divide-y divide-border">
             {filteredPlayers.map((p) => (
-              <TransportRow key={p.player_id} token={token} player={p} needsTransport={!isHome && goingPlayerIds.has(p.player_id)} />
+              <TransportRow key={p.player_id} token={token} player={p} needsTransport={goingPlayerIds.has(p.player_id)} />
             ))}
           </ul>
         </section>
