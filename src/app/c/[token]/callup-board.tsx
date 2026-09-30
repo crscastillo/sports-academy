@@ -66,7 +66,7 @@ function Responder({ token, callupId, onDone }: { token: string; callupId: strin
   );
 }
 
-function TransportRow({ token, player, needsTransport }: { token: string; player: GuestPlayer; needsTransport: boolean }) {
+function TransportRow({ token, player, needsTransport, disabled }: { token: string; player: GuestPlayer; needsTransport: boolean; disabled: boolean }) {
   const [transport, setLocalTransport] = useState(player.transport);
   // Server truth can change from outside this control too — e.g. re-answering a single
   // match clears a "no voy" set here. Adjust local state during render (not an effect)
@@ -94,21 +94,21 @@ function TransportRow({ token, player, needsTransport }: { token: string; player
         </span>
         <div className="flex flex-wrap gap-2">
           <button
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => pick("bus")}
             className={`${opt} ${transport === "bus" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
           >
             🚌 Buseta
           </button>
           <button
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => pick("own")}
             className={`${opt} ${transport === "own" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
           >
             🚗 Medios propios
           </button>
           <button
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => pick("no_go")}
             className={`${opt} ${transport === "no_go" ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-950" : "border-border bg-card"}`}
           >
@@ -129,12 +129,14 @@ export function CallupBoard({
   players,
   isHome,
   allowedPlayerIds,
+  isPast,
 }: {
   token: string;
   matches: GuestMatch[];
   players: GuestPlayer[];
   isHome: boolean;
   allowedPlayerIds: Set<string>;
+  isPast: boolean;
 }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
@@ -179,7 +181,7 @@ export function CallupBoard({
           <p className="mb-2 text-xs text-muted-foreground">Una sola respuesta por atleta para toda la jornada, aunque tenga más de un partido.</p>
           <ul className="divide-y divide-border">
             {filteredPlayers.map((p) => (
-              <TransportRow key={p.player_id} token={token} player={p} needsTransport={goingPlayerIds.has(p.player_id)} />
+              <TransportRow key={p.player_id} token={token} player={p} needsTransport={goingPlayerIds.has(p.player_id)} disabled={isPast} />
             ))}
           </ul>
         </section>
@@ -203,31 +205,45 @@ export function CallupBoard({
             </div>
           </div>
           <ul className="divide-y divide-border">
-            {m.callups.map((c) => (
-              <li key={c.id} className="py-2">
-                <button className="flex w-full items-center justify-between gap-2 text-left" onClick={() => setOpen(open === c.id ? null : c.id)}>
+            {m.callups.map((c) =>
+              isPast ? (
+                <li key={c.id} className="flex items-center justify-between gap-2 py-2">
                   <span className="text-sm">
                     {c.jersey_number != null && <span className="mr-1 font-mono text-xs text-muted-foreground">#{c.jersey_number}</span>}
                     {c.player_name}
                   </span>
-                  <span className="flex items-center gap-2">
-                    {saved === c.id && <span className="text-xs text-green-600">¡Guardado!</span>}
-                    <StatusPill status={c.status} />
-                  </span>
-                </button>
-                {open === c.id && (
-                  <Responder
-                    token={token}
-                    callupId={c.id}
-                    onDone={() => {
-                      setOpen(null);
-                      setSaved(c.id);
-                      setTimeout(() => setSaved(null), 2500);
-                    }}
-                  />
-                )}
-              </li>
-            ))}
+                  <StatusPill status={c.status} />
+                </li>
+              ) : (
+                <li key={c.id} className="py-2">
+                  <button className="flex w-full items-center justify-between gap-2 text-left" onClick={() => setOpen(open === c.id ? null : c.id)}>
+                    <span className="text-sm">
+                      {c.jersey_number != null && <span className="mr-1 font-mono text-xs text-muted-foreground">#{c.jersey_number}</span>}
+                      {c.player_name}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {saved === c.id && <span className="text-xs text-green-600">¡Guardado!</span>}
+                      <StatusPill status={c.status} />
+                      <span className={`text-muted-foreground transition-transform ${open === c.id ? "rotate-180" : ""}`} aria-hidden>▾</span>
+                    </span>
+                  </button>
+                  {c.status === "pending" && open !== c.id && (
+                    <p className="mt-0.5 text-xs text-amber-600">👆 Tocá aquí para confirmar si asiste</p>
+                  )}
+                  {open === c.id && (
+                    <Responder
+                      token={token}
+                      callupId={c.id}
+                      onDone={() => {
+                        setOpen(null);
+                        setSaved(c.id);
+                        setTimeout(() => setSaved(null), 2500);
+                      }}
+                    />
+                  )}
+                </li>
+              ),
+            )}
           </ul>
         </section>
       ))}

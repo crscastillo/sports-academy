@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getRepositories } from "@/lib/repositories";
-import { formatDate, formatTime } from "@/lib/labels";
+import { formatDate, formatTime, todayISO } from "@/lib/labels";
 import { CallupBoard, type GuestMatch, type GuestPlayer } from "./callup-board";
 import { GuardianBadge, GuardianGate } from "./guardian-gate";
 
@@ -42,6 +42,7 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
 
   const rosterIds = new Set(d.players.map((p) => p.player_id));
   const guardian = readGuardian((await cookies()).get(GUARDIAN_COOKIE)?.value, rosterIds);
+  const isPast = md.date < todayISO();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
@@ -87,8 +88,12 @@ export default async function GuestCallupPage({ params }: PageProps<"/c/[token]"
       {guardian ? (
         <>
           <GuardianBadge token={token} name={guardian.name} />
-          <p className="mb-3 text-sm text-muted-foreground">Confirmá si tu atleta asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
-          <CallupBoard token={token} matches={d.matches} players={d.players} isHome={md.is_home} allowedPlayerIds={new Set(guardian.playerIds)} />
+          {isPast ? (
+            <p className="mb-3 rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">Esta jornada ya pasó, así que no se pueden hacer cambios.</p>
+          ) : (
+            <p className="mb-3 text-sm text-muted-foreground">Confirmá si tu atleta asiste a cada partido e indicá cómo llega (una vez por jornada).</p>
+          )}
+          <CallupBoard token={token} matches={d.matches} players={d.players} isHome={md.is_home} allowedPlayerIds={new Set(guardian.playerIds)} isPast={isPast} />
         </>
       ) : (
         <GuardianGate token={token} players={d.players} />
